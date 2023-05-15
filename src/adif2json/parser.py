@@ -1,4 +1,5 @@
 from typing import Tuple
+from itertools import islice
 
 
 def discard_until(s: str, *chars: str) -> str:
@@ -60,5 +61,13 @@ def read_forward(s: str, *chars: str) -> Tuple[str, str]:
 
 
 def read_n(s: str, n: int) -> Tuple[str, str]:
-    # TODO: implement this function
-    return "", ""
+    """
+    Must read n characters from the start of the string. Return the
+    characters read and the remaining string.
+    The characters can be unicode characters, so we can't just use
+    s[:n] to get the characters.
+    """
+    s_iter = iter(s)
+    first_n_chars = ''.join(islice(s_iter, n))
+    remaining_chars = ''.join(s_iter)
+    return first_n_chars, remaining_chars
