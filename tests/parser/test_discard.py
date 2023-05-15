@@ -1,5 +1,3 @@
-
-
 from adif2json.parser import discard_until, discard_forward
 
 

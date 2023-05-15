@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setup(
     name='adif2json',
     version='0.1',
-    description='Una herramienta para convertir archivos ADIF a JSON',
+    description='Una herramienta para convertir archivos ADIF a JSON y viceversa',
     py_modules=["adif2json"],
     package_dir={'': 'src'},
     classifiers=[
