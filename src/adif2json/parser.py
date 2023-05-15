@@ -30,8 +30,33 @@ def discard_forward(s: str, *chars: str) -> str:
 
 
 def read_until(s: str, *chars: str) -> Tuple[str, str]:
-    # TODO: implement this function
-    return "", ""
+    """
+    Read characters from the start of the string until one of the
+    characters in chars is found. Return the characters read and the
+    remaining string.
+    """
+    res = ""
+    while len(s) > 0:
+        if s[0] in chars:
+            return res, s
+        res += s[0]
+        s = s[1:]
+    return res, ""
+
+
+def read_forward(s: str, *chars: str) -> Tuple[str, str]:
+    """
+    Read characters from the start of the string until one of the
+    characters in chars is found. Return the characters read and the
+    remaining string.
+    """
+    res = ""
+    while len(s) > 0:
+        res += s[0]
+        if s[0] in chars:
+            return res, s[1:]
+        s = s[1:]
+    return res, ""
 
 
 def read_n(s: str, n: int) -> Tuple[str, str]:
