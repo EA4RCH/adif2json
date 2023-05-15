@@ -11,29 +11,41 @@ def test_read_empty():
 
 def test_read_zero():
     imput = 'abc' # the input must be reamaing the same
-    res, rem = read_n(imput, 0)
+    res = read_n(imput, 0)
 
-    assert res == ''
-    assert rem == 'abc'
-    assert imput == 'abc'
+    if res:
+        val, rem = res
+        assert val == ''
+        assert rem == 'abc'
+        assert imput == 'abc'
+    else:
+        assert False
 
 
 def test_read_one():
     imput = 'abc' # the input must be reamaing the same
-    res, rem = read_n(imput, 1)
+    res = read_n(imput, 1)
 
-    assert res == 'a'
-    assert rem == 'bc'
-    assert imput == 'abc'
+    if res:
+        val, rem = res
+        assert val == 'a'
+        assert rem == 'bc'
+        assert imput == 'abc'
+    else:
+        assert False
 
 
 def test_read_two():
     imput = 'abc' # the input must be reamaing the same
-    res, rem = read_n(imput, 2)
+    res = read_n(imput, 2)
 
-    assert res == 'ab'
-    assert rem == 'c'
-    assert imput == 'abc'
+    if res:
+        val, rem = res
+        assert val == 'ab'
+        assert rem == 'c'
+        assert imput == 'abc'
+    else:
+        assert False
 
 
 def test_read_more_than_string():
