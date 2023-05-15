@@ -4,15 +4,15 @@ from adif2json.parser import discard_until, discard_forward
 def test_empty_string():
     res_until = discard_until("", "a")
     res_forward = discard_forward("", "a")
-    assert res_until == ""
-    assert res_forward == ""
+    assert res_until is None
+    assert res_forward is None
 
 
 def test_no_match():
     res_until = discard_until("abc", "d")
     res_forward = discard_forward("abc", "d")
-    assert res_until == ""
-    assert res_forward == ""
+    assert res_until is None
+    assert res_forward is None
 
 
 def test_match_at_start():

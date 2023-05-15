@@ -3,9 +3,9 @@ from adif2json.parser import read_n
 
 def test_read_empty():
     imput = '' # the input must be reamaing the same
-    res, _ = read_n(imput, 1)
+    res = read_n(imput, 1)
 
-    assert res == ''
+    assert res is None
     assert imput == ''
 
 
@@ -38,8 +38,7 @@ def test_read_two():
 
 def test_read_more_than_string():
     imput = 'abc' # the input must be reamaing the same
-    res, rem = read_n(imput, 4)
+    res = read_n(imput, 4)
 
-    assert res == 'abc'
-    assert rem == ''
+    assert res is None
     assert imput == 'abc'

@@ -3,22 +3,20 @@ from adif2json.parser import read_until, read_forward
 
 def test_read_empty():
     imput = '' # the input must be reamaing the same
-    res_until, _ = read_until(imput, 'a')
-    res_forward, _ = read_forward(imput,'a')
+    res_until = read_until(imput, 'a')
+    res_forward = read_forward(imput,'a')
 
-    assert res_until == ''
-    assert res_forward == ''
+    assert res_until is None
+    assert res_forward is None
 
 
 def test_no_match():
     imput = 'abc' # the input must be reamaing the same
-    res_until, rem_until = read_until(imput, 'd')
-    res_forward, rem_forward = read_forward(imput,'d')
+    res_until = read_until(imput, 'd')
+    res_forward = read_forward(imput,'d')
 
-    assert res_until == 'abc'
-    assert rem_until == ''
-    assert res_forward == 'abc'
-    assert rem_forward == ''
+    assert res_until is None
+    assert res_forward is None
 
 
 def test_match_at_start():
