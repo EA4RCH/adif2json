@@ -15,6 +15,7 @@ class Reason(Enum):
     INVALID_SIZE = 5
     INVALID_TIPE = 6
     INVALID_VALUE = 7
+    EXCEEDENT_VALUE = 8
 
 
 @dataclass
@@ -118,14 +119,24 @@ def _read_field(adif: str) -> Tuple[Field | Reason, str]:
         if label.label.upper() == "EOR":
             return Reason.EOR, rest
 
-    if label.size and label.size > 0:
-        value, rest = _read_value(rest, label.size)
-        if isinstance(value, Reason):
-            return value, rest
-        if label.tipe:
-            return Field(label.label, value, label.tipe), rest
-        return Field(label.label, value), rest
-    raise Exception("Unexpected")
+    if not label.size or label.size < 1:
+        return Reason.INVALID_SIZE, rest
+
+    value, rest = _read_value(rest, label.size)
+    if isinstance(value, Reason):
+        return value, rest
+    if label.tipe:
+        field = Field(label.label, value, label.tipe)
+    else:
+        field = Field(label.label, value)
+
+    rr = par.read_until(rest, '<')
+    if not rr:
+        return field, rest
+    remaining, rest = rr
+    if remaining.strip() != "":
+        return Reason.EXCEEDENT_VALUE, rest
+    return field, rest
 
 
 def _read_label(adif: str) -> Tuple[Label | Reason, str]:

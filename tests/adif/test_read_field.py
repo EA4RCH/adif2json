@@ -53,3 +53,11 @@ def test_eoh():
     assert res == Reason.EOH
     assert imput == '<eoh>'
     assert rem == ''
+
+
+def test_exceedent_value():
+    imput = '<call:3>EA4HFF<eor>'
+    res, rem = _read_field(imput)
+
+    assert res == Reason.EXCEEDENT_VALUE
+    assert imput == '<call:3>EA4HFF<eor>'
