@@ -26,7 +26,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'adif2json=adif2json.__main__:main',  # Permite que el módulo se ejecute como un script en la línea de comandos
+            'adif2json=adif2json.__main__:adif2json',  # Permite que el módulo se ejecute como un script en la línea de comandos
         ]
     },
 )
