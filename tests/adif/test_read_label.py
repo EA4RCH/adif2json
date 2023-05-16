@@ -32,7 +32,7 @@ def _check_label(imput, label, size, tipe, rem):
 
 def test_eof_label():
     imput = '<EOF>'
-    _check_label(imput, 'eof', None, None, '')
+    _check_label(imput, 'EOF', None, None, '')
 
 
 def test_match_at_start():
@@ -47,7 +47,7 @@ def test_match_w_tipe():
 
 def test_match_w_lower_tipe():
     imput = '<call:6:s>EA4HFF'
-    _check_label(imput, 'call', 6, 'S', 'EA4HFF')
+    _check_label(imput, 'call', 6, 's', 'EA4HFF')
 
 
 def _check_raises(imput):

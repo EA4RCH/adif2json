@@ -29,7 +29,7 @@ def test_one_header():
     assert res == {
         "headers": {
             "fields": {'myheader': '1'},
-            "tipes": {'myheader': 'S'},
+            "types": {'myheader': None},
         }
     }, res
 
@@ -41,7 +41,7 @@ def test_multiple_headers():
     assert res == {
         "headers": {
             "fields": {'myheader': '1', 'myheader2': '12'},
-            "tipes": {'myheader': 'S', 'myheader2': 'S'},
+            "types": {'myheader': None, 'myheader2': None},
         }
     }, res
 
@@ -53,7 +53,7 @@ def test_first_header_bad_then_right():
     assert res == {
         "headers": {
             "fields": {'myheader': '1'},
-            "tipes": {'myheader': 'S'},
+            "types": {'myheader': None},
         },
         "errors": ['INVALID_SIZE'],
     }, res
@@ -76,7 +76,7 @@ def test_last_bad_header():
     assert res == {
         "headers": {
             "fields": {'myheader': '1'},
-            "tipes": {'myheader': 'S'},
+            "types": {'myheader': None},
         },
         "errors": ['INVALID_SIZE'],
     }, res
@@ -88,6 +88,6 @@ def test_one_qso():
 
     assert res == {
         "qsos": [
-            { 'fields': {'call': 'EA4HFF'}, 'tipes': {'call': 'S'} }
+            { 'fields': {'call': 'EA4HFF'}, 'types': {'call': None} }
         ]
     }, res

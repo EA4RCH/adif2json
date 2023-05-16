@@ -56,3 +56,11 @@ def test_read_more_than_string():
     assert res == 'abc'
     assert rem == ''
     assert imput == 'abc'
+
+
+def test_unicode():
+    imput = "ĀBC"
+    res, rem = read_n(imput, 2)
+
+    assert res == 'ĀB'
+    assert rem == 'C'

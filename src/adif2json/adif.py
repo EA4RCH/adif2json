@@ -1,6 +1,7 @@
 import adif2json.parser as par
 
 
+import json
 from enum import Enum
 from typing import Optional, Tuple, Dict, List
 from dataclasses import dataclass, asdict
@@ -33,7 +34,7 @@ class Field:
 @dataclass
 class Record:
     fields: Dict[str, str]
-    tipes: Dict[str, str]
+    types: Dict[str, Optional[str]]
 
 
 @dataclass
@@ -44,10 +45,9 @@ class Adif:
 
 
 def to_json(adif: str) -> str:
-    if adif == "": return '{"qsos": []}'
-
-    #headers, rest = _read_headers(adif)
-    return '{"qsos": []}'
+    if adif == "": return "{\"qsos\": []}"
+    d = to_dict(adif)
+    return json.dumps(d)
 
 
 def to_dict(adif: str) -> Dict:
@@ -88,13 +88,8 @@ def _read_fields(adif: str) -> Adif:
                 errors.append(field)
             continue
 
-        tipe = "S"
-        if field.tipe:
-            tipe = field.tipe
-
         current.fields[field.label] = field.value
-        current.tipes[field.label] = tipe
-
+        current.types[field.label] = field.tipe
     raise Exception("Unexpected")
 
 
@@ -136,7 +131,7 @@ def _read_label(adif: str) -> Tuple[Label | Reason, str]:
     tipe = None
 
     if len(parts) >= 1:
-        label = parts[0].lower()
+        label = parts[0]
         if len(label) == 0:
             return Reason.INVALID_LABEL, rest
     if len(parts) >= 2:
@@ -145,7 +140,7 @@ def _read_label(adif: str) -> Tuple[Label | Reason, str]:
         except ValueError:
             return Reason.INVALID_SIZE, rest
     if len(parts) >= 3:
-        tipe = parts[2].upper()
+        tipe = parts[2]
         if len(tipe) != 1:
             return Reason.INVALID_TIPE, rest
         if not tipe.isalpha():

@@ -9,9 +9,13 @@ def to_adif(input_json: str) -> str:
         qsos = content["qsos"]
         adif_out = ""
         for qso in qsos:
-            for key, value in qso.items():
-                adif_out += "<{}:{}>{}, ".format(key.upper(), len(str(value)), value)
-                adif_out = adif_out.rstrip(', ')
-        adif_out += "<EOR>\n"
+            for label in qso["fields"].keys() if "fields" in qso else []:
+                value = qso["fields"][label]
+                tipe = qso["types"][label]
+                if tipe:
+                    adif_out += "<{}:{}:{}>{} ".format(label, len(str(value)), tipe, value)
+                else:
+                    adif_out += "<{}:{}>{} ".format(label, len(str(value)), value)
+            adif_out += "<EOR>\n"
         return adif_out
     return ""
