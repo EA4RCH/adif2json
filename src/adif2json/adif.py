@@ -95,7 +95,8 @@ def _read_fields(adif: str) -> Adif:
                 headers = current
                 current = Record({})
             elif field == Reason.EOR:
-                qsos.append(current)
+                if len(current.fields) > 0:
+                    qsos.append(current)
                 current = Record({})
             else:
                 errors.append(field)
