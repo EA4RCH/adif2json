@@ -20,3 +20,5 @@ While the `adif2json` project is designed to handle conversions between ADIF and
 
 By understanding these objectives and limitations, users can effectively utilize `adif2json` for their ADIF and JSON file conversion needs.
 
+# Installation
+
