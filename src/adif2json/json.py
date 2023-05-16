@@ -11,7 +11,9 @@ def to_adif(input_json: str) -> str:
         for qso in qsos:
             for label in qso["fields"].keys() if "fields" in qso else []:
                 value = qso["fields"][label]
-                tipe = qso["types"][label]
+                tipe = None
+                if "types" in qso and label in qso["types"]:
+                    tipe = qso["types"][label]
                 if tipe:
                     adif_out += "<{}:{}:{}>{} ".format(label, len(str(value)), tipe, value)
                 else:

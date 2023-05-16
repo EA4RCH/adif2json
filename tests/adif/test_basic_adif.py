@@ -29,7 +29,6 @@ def test_one_header():
     assert res == {
         "headers": {
             "fields": {'myheader': '1'},
-            "types": {'myheader': None},
         }
     }, res
 
@@ -41,7 +40,6 @@ def test_multiple_headers():
     assert res == {
         "headers": {
             "fields": {'myheader': '1', 'myheader2': '12'},
-            "types": {'myheader': None, 'myheader2': None},
         }
     }, res
 
@@ -53,7 +51,6 @@ def test_first_header_bad_then_right():
     assert res == {
         "headers": {
             "fields": {'myheader': '1'},
-            "types": {'myheader': None},
         },
         "errors": ['INVALID_SIZE'],
     }, res
@@ -76,7 +73,6 @@ def test_last_bad_header():
     assert res == {
         "headers": {
             "fields": {'myheader': '1'},
-            "types": {'myheader': None},
         },
         "errors": ['INVALID_SIZE'],
     }, res
@@ -88,6 +84,35 @@ def test_one_qso():
 
     assert res == {
         "qsos": [
-            { 'fields': {'call': 'EA4HFF'}, 'types': {'call': None} }
+            { 'fields': {'call': 'EA4HFF'} }
         ]
     }, res
+
+
+def test_several_qsos():
+    imput = '<call:6>EA4HFF<EOR><call:5>EA4AW<EOR><call:4>EC5A<EOR>'
+    res = to_dict(imput)
+
+    assert res == {
+        "qsos": [
+            { 'fields': {'call': 'EA4HFF'} },
+            { 'fields': {'call': 'EA4AW'} },
+            { 'fields': {'call': 'EC5A'} },
+        ]
+    }, res
+
+
+def test_headers_and_qsos():
+    imput = '<program:9>aidf2json<EOH><call:6>EA4HFF<EOR><call:5>EA4AW<EOR><call:4>EC5A<EOR>'
+    res = to_dict(imput)
+
+    assert res == {
+        "headers": {
+            "fields": {'program': 'aidf2json'},
+        },
+        "qsos": [
+            { 'fields': {'call': 'EA4HFF'} },
+            { 'fields': {'call': 'EA4AW'} },
+            { 'fields': {'call': 'EC5A'} },
+        ]
+    }

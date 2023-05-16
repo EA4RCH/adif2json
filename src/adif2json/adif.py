@@ -34,7 +34,7 @@ class Field:
 @dataclass
 class Record:
     fields: Dict[str, str]
-    types: Dict[str, Optional[str]]
+    types: Optional[Dict[str, str]] = None
 
 
 @dataclass
@@ -55,11 +55,23 @@ def to_dict(adif: str) -> Dict:
     out = {}
     if adif_f.headers:
         if len(adif_f.headers.fields) > 0:
-            out["headers"] = asdict(adif_f.headers)
+            h = {}
+            if adif_f.headers.types:
+                h["types"] = adif_f.headers.types
+            h["fields"] = adif_f.headers.fields
+            out["headers"] = h
         else:
             out["headers"] = None
     if adif_f.qsos:
-        out["qsos"] = [asdict(qso) for qso in adif_f.qsos]
+        qsos = []
+        [asdict(qso) for qso in adif_f.qsos]
+        for r in adif_f.qsos:
+            q = {}
+            if r.types:
+                q["types"] = r.types
+            q["fields"] = r.fields
+            qsos.append(q)
+        out["qsos"] = qsos
     if adif_f.errors:
         out["errors"] = [error.name for error in adif_f.errors]
     return out
@@ -67,7 +79,7 @@ def to_dict(adif: str) -> Dict:
 
 def _read_fields(adif: str) -> Adif:
     if adif == "": return Adif()
-    current : Record = Record({}, {})
+    current : Record = Record({})
     headers : Optional[Record] = None
     qsos = []
     errors = []
@@ -80,16 +92,19 @@ def _read_fields(adif: str) -> Adif:
                 return Adif(headers, qsos, errors)
             elif field == Reason.EOH:
                 headers = current
-                current = Record({}, {})
+                current = Record({})
             elif field == Reason.EOR:
                 qsos.append(current)
-                current = Record({}, {})
+                current = Record({})
             else:
                 errors.append(field)
             continue
 
         current.fields[field.label] = field.value
-        current.types[field.label] = field.tipe
+        if field.tipe:
+            if not current.types:
+                current.types = {}
+            current.types[field.label] = field.tipe
     raise Exception("Unexpected")
 
 
@@ -107,7 +122,9 @@ def _read_field(adif: str) -> Tuple[Field | Reason, str]:
         value, rest = _read_value(rest, label.size)
         if isinstance(value, Reason):
             return value, rest
-        return Field(label.label, value, label.tipe), rest
+        if label.tipe:
+            return Field(label.label, value, label.tipe), rest
+        return Field(label.label, value), rest
     raise Exception("Unexpected")
 
 
