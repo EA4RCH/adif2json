@@ -1,50 +1,41 @@
-from adif2json.parser import discard_until, discard_forward
+from adif2json.parser import discard_until, discard_forward, Position, EndOfFile
 
 
 def test_empty_string():
-    res_until = discard_until("", "a")
-    res_forward = discard_forward("", "a")
-    assert res_until is None
-    assert res_forward is None
+    imp = Position("")
+    res_until = discard_until(imp, "a")
+    res_forward = discard_forward(imp, "a")
+    assert res_until == EndOfFile(1, 1)
+    assert res_forward == EndOfFile(1, 1)
 
 
 def test_no_match():
-    res_until = discard_until("abc", "d")
-    res_forward = discard_forward("abc", "d")
-    assert res_until is None
-    assert res_forward is None
+    imp = Position("abc")
+    res_until = discard_until(imp, "d")
+    res_forward = discard_forward(imp, "d")
+    assert res_until == EndOfFile(1, 4)
+    assert res_forward == EndOfFile(1, 4)
 
 
 def test_match_at_start():
-    res_until = discard_until("abc", "a")
-    res_forward = discard_forward("abc", "a")
-    assert res_until == "abc"
-    assert res_forward == "bc"
+    imp = Position("abc")
+    res_until = discard_until(imp, "a")
+    res_forward = discard_forward(imp, "a")
+    assert res_until == Position("abc", 1, 1)
+    assert res_forward == Position("bc", 1, 2)
 
 
 def test_match_at_end():
-    res_until = discard_until("abc", "c")
-    res_forward = discard_forward("abc", "c")
-    assert res_until == "c"
-    assert res_forward == ""
+    imp = Position("abc")
+    res_until = discard_until(imp, "c")
+    res_forward = discard_forward(imp, "c")
+    assert res_until == Position("c", 1, 3)
+    assert res_forward == Position("", 1, 4)
 
 
 def test_match_in_middle():
-    res_until = discard_until("abc", "b")
-    res_forward = discard_forward("abc", "b")
-    assert res_until == "bc"
-    assert res_forward == "c"
-
-
-def test_match_multiple_chars():
-    res_until = discard_until("abc", "b", "c")
-    res_forward = discard_forward("abc", "b", "c")
-    assert res_until == "bc"
-    assert res_forward == "c"
-
-
-def test_match_multiple_chars_in_middle():
-    res_until = discard_until("abc", "c", "b")
-    res_forward = discard_forward("abc", "c", "b")
-    assert res_until == "bc"
-    assert res_forward == "c"
+    imp = Position("abc")
+    res_until = discard_until(imp, "b")
+    res_forward = discard_forward(imp, "b")
+    assert res_until == Position("bc", 1, 2)
+    assert res_forward == Position("c", 1, 3)

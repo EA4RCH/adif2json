@@ -78,8 +78,8 @@ def to_dict(adif: str) -> Dict:
     return out
 
 
-def _read_fields(adif: str) -> Adif:
-    if adif == "": return Adif()
+def _read_fields(adif: par.Position) -> Adif:
+    if adif.remaining == "": return Adif()
     current : Record = Record({})
     headers : Optional[Record] = None
     qsos = []
@@ -87,6 +87,8 @@ def _read_fields(adif: str) -> Adif:
     rest = adif
 
     while True:
+        if isinstance(rest, par.EndOfFile):
+            return Adif(errors=[Reason.EOF])
         field, rest = _read_field(rest)
         if isinstance(field, Reason):
             if field == Reason.EOF:
@@ -110,26 +112,30 @@ def _read_fields(adif: str) -> Adif:
     raise Exception("Unexpected")
 
 
-def _read_field(adif: str) -> Tuple[Field | Reason, str]:
+def _read_field(adif: par.Position) -> Tuple[Field | Reason, par.Position | par.EndOfFile]:
     label, rest =  _read_label(adif)
     if isinstance(label, Reason):
         return label, rest
-    if not label.size:
+    if not label.size or label.size < 1:
         if label.label.upper() == "EOH":
             return Reason.EOH, rest
         if label.label.upper() == "EOR":
             return Reason.EOR, rest
-
-    if not label.size or label.size < 1:
         return Reason.INVALID_SIZE, rest
 
-    value, rest = _read_value(rest, label.size)
+    if isinstance(rest, par.EndOfFile):
+        return Reason.EOF, rest
+
+    value, rest = par.read_n(rest, label.size)
     if isinstance(value, Reason):
         return value, rest
     if label.tipe:
         field = Field(label.label, value, label.tipe)
     else:
         field = Field(label.label, value)
+
+    if isinstance(rest, par.EndOfFile):
+        return Reason.EOF, rest
 
     rr = par.read_until(rest, '<')
     if not rr:
@@ -140,21 +146,19 @@ def _read_field(adif: str) -> Tuple[Field | Reason, str]:
     return field, rest
 
 
-def _read_label(adif: str) -> Tuple[Label | Reason, str]:
+def _read_label(adif: par.Position) -> Tuple[Label | Reason, par.Position | par.EndOfFile]:
     rest = par.discard_forward(adif, '<')
-    if not rest:
-        return Reason.EOF, ""
+    if isinstance(rest, par.EndOfFile):
+        return Reason.EOF, rest
 
-    maybe_content = par.read_until(rest, '>')
-    if not maybe_content:
-        return Reason.EOF, ""
-
-    content, rest = maybe_content
-    if not content:
+    content, rest = par.read_until(rest, '>')
+    if content == "":
         return Reason.INVALID_LABEL, rest
+    if isinstance(rest, par.EndOfFile):
+        return Reason.EOF, rest
 
     parts = content.split(':')
-    rest = rest[1:]
+    rest = par.discard_n(rest, 1)
     label = ""
     size = None
     tipe = None
@@ -176,9 +180,3 @@ def _read_label(adif: str) -> Tuple[Label | Reason, str]:
             return Reason.INVALID_TIPE, rest
 
     return Label(label, size, tipe), rest
-
-
-def _read_value(adif: str, size: int) -> Tuple[str | Reason, str]:
-    if adif == "" or len(adif) < size:
-        return Reason.EOF, ""
-    return par.read_n(adif, size)
