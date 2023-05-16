@@ -2,15 +2,16 @@ from adif2json.parser import read_n
 
 
 def test_read_empty():
-    imput = '' # the input must be reamaing the same
-    res = read_n(imput, 1)
+    imput = ''
+    res, rem = read_n(imput, 1)
 
-    assert res is None
+    assert res == ''
+    assert rem == ''
     assert imput == ''
 
 
 def test_read_zero():
-    imput = 'abc' # the input must be reamaing the same
+    imput = 'abc'
     res = read_n(imput, 0)
 
     if res:
@@ -23,7 +24,7 @@ def test_read_zero():
 
 
 def test_read_one():
-    imput = 'abc' # the input must be reamaing the same
+    imput = 'abc'
     res = read_n(imput, 1)
 
     if res:
@@ -36,7 +37,7 @@ def test_read_one():
 
 
 def test_read_two():
-    imput = 'abc' # the input must be reamaing the same
+    imput = 'abc'
     res = read_n(imput, 2)
 
     if res:
@@ -49,8 +50,9 @@ def test_read_two():
 
 
 def test_read_more_than_string():
-    imput = 'abc' # the input must be reamaing the same
-    res = read_n(imput, 4)
+    imput = 'abc'
+    res, rem = read_n(imput, 4)
 
-    assert res is None
+    assert res == 'abc'
+    assert rem == ''
     assert imput == 'abc'

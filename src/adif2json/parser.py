@@ -60,15 +60,13 @@ def read_forward(s: str, *chars: str) -> Optional[Tuple[str, str]]:
     return None
 
 
-def read_n(s: str, n: int) -> Optional[Tuple[str, str]]:
+def read_n(s: str, n: int) -> Tuple[str, str]:
     """
     Must read n characters from the start of the string. Return the
     characters read and the remaining string.
     The characters can be unicode characters, so we can't just use
     s[:n] to get the characters.
     """
-    if not s or len(s) < n:
-        return None
     s_iter = iter(s)
     first_n_chars = ''.join(islice(s_iter, n))
     remaining_chars = ''.join(s_iter)

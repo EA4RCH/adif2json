@@ -1,11 +1,11 @@
-from adif2json.adif import _read_field, Field
+from adif2json.adif import _read_field, Field, Reason
 
 
 def test_empty():
     imput = ''
     res, _ = _read_field(imput)
 
-    assert res is None
+    assert res == Reason.EOF
     assert imput == ''
 
 
@@ -30,16 +30,11 @@ def test_field_w_tipe():
     imput = '<call:6:S>EA4HFF'
     _check_field(imput, 'call', 'S', 'EA4HFF', '')
 
-
-def test_eoh():
-    imput = '<eoh>'
-    _check_field(imput, 'eoh', None, None, '')
-
 def test_eof_value():
     imput = '<call:6>EA4'
     res, _ = _read_field(imput)
 
-    assert res is None
+    assert res == Reason.EOF
     assert imput == '<call:6>EA4'
 
 
@@ -47,5 +42,14 @@ def test_invalid_label():
     imput = '<:6>EA4HFF'
     res, _ = _read_field(imput)
 
-    assert isinstance(res, str)
+    assert res == Reason.INVALID_LABEL
     assert imput == '<:6>EA4HFF'
+
+
+def test_eoh():
+    imput = '<eoh>'
+    res, rem = _read_field(imput)
+
+    assert res == Reason.EOH
+    assert imput == '<eoh>'
+    assert rem == ''

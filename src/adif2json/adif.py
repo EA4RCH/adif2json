@@ -1,18 +1,19 @@
 import adif2json.parser as par
 
 
+from enum import Enum
 from typing import Optional, Tuple, Dict, List
 from dataclasses import dataclass, asdict
 
 
-Reason = str
-
-
-@dataclass
-class Field:
-    label: str
-    tipe: Optional[str] = None
-    value: Optional[str] = None
+class Reason(Enum):
+    EOF = 1
+    EOH = 2
+    EOR = 3
+    INVALID_LABEL = 4
+    INVALID_SIZE = 5
+    INVALID_TIPE = 6
+    INVALID_VALUE = 7
 
 
 @dataclass
@@ -20,6 +21,26 @@ class Label:
     label: str
     size: Optional[int] = None
     tipe: Optional[str] = None
+
+
+@dataclass
+class Field:
+    label: str
+    value: str
+    tipe: Optional[str] = None
+
+
+@dataclass
+class Record:
+    fields: Dict[str, str]
+    tipes: Dict[str, str]
+
+
+@dataclass
+class Adif:
+    headers: Optional[Record] = None
+    qsos: Optional[List[Record]] = None
+    errors: Optional[List[Reason]] = None
 
 
 def to_json(adif: str) -> str:
@@ -30,64 +51,83 @@ def to_json(adif: str) -> str:
 
 
 def to_dict(adif: str) -> Dict:
+    adif_f = _read_fields(adif)
     out = {}
-    headers, rest = _read_headers(adif)
-    if headers is None:
-        return out
-    if headers is not None:
-        out["headers"] = [asdict(h) for h in headers]
-    # TODO: read qsos
+    if adif_f.headers:
+        if len(adif_f.headers.fields) > 0:
+            out["headers"] = asdict(adif_f.headers)
+        else:
+            out["headers"] = None
+    if adif_f.qsos:
+        out["qsos"] = [asdict(qso) for qso in adif_f.qsos]
+    if adif_f.errors:
+        out["errors"] = [error.name for error in adif_f.errors]
     return out
 
 
-def _read_headers(adif: str) -> Tuple[List[Field] | None, str]:
-    headers = []
+def _read_fields(adif: str) -> Adif:
+    if adif == "": return Adif()
+    current : Record = Record({}, {})
+    headers : Optional[Record] = None
+    qsos = []
+    errors = []
     rest = adif
 
-    while len(rest) > 0:
+    while True:
         field, rest = _read_field(rest)
-        if not field:
-            return headers, rest
-        if isinstance(field, str):
-            # TODO: handle reason
+        if isinstance(field, Reason):
+            if field == Reason.EOF:
+                return Adif(headers, qsos, errors)
+            elif field == Reason.EOH:
+                headers = current
+                current = Record({}, {})
+            elif field == Reason.EOR:
+                qsos.append(current)
+                current = Record({}, {})
+            else:
+                errors.append(field)
             continue
-        if field.label == "eoh":
-            # end of headers
-            return headers, rest
-        headers.append(field)
-    return None, rest
 
+        tipe = "S"
+        if field.tipe:
+            tipe = field.tipe
 
+        current.fields[field.label] = field.value
+        current.tipes[field.label] = tipe
 
-def _read_field(adif: str) -> Tuple[Field | Reason | None, str]:
-    label, rest =  _read_label(adif)
-    if not label:
-        return None, ""
-    if isinstance(label, str):
-        return label, rest
-    if not label.size:
-        return Field(label.label), rest
-    if label.size and label.size > 0:
-        maybe_value = _read_value(rest, label.size)
-        if not maybe_value:
-            return None, rest
-        value, rest = maybe_value
-        return Field(label.label, label.tipe, value), rest
     raise Exception("Unexpected")
 
 
-def _read_label(adif: str) -> Tuple[Label | Reason | None, str]:
+def _read_field(adif: str) -> Tuple[Field | Reason, str]:
+    label, rest =  _read_label(adif)
+    if isinstance(label, Reason):
+        return label, rest
+    if not label.size:
+        if label.label.upper() == "EOH":
+            return Reason.EOH, rest
+        if label.label.upper() == "EOR":
+            return Reason.EOR, rest
+
+    if label.size and label.size > 0:
+        value, rest = _read_value(rest, label.size)
+        if isinstance(value, Reason):
+            return value, rest
+        return Field(label.label, value, label.tipe), rest
+    raise Exception("Unexpected")
+
+
+def _read_label(adif: str) -> Tuple[Label | Reason, str]:
     rest = par.discard_forward(adif, '<')
     if not rest:
-        return None, ""
+        return Reason.EOF, ""
 
     maybe_content = par.read_until(rest, '>')
     if not maybe_content:
-        return None, ""
+        return Reason.EOF, ""
 
     content, rest = maybe_content
     if not content:
-        return "Empty label", rest
+        return Reason.INVALID_LABEL, rest
 
     parts = content.split(':')
     rest = rest[1:]
@@ -98,21 +138,23 @@ def _read_label(adif: str) -> Tuple[Label | Reason | None, str]:
     if len(parts) >= 1:
         label = parts[0].lower()
         if len(label) == 0:
-            return "Empty label", rest
+            return Reason.INVALID_LABEL, rest
     if len(parts) >= 2:
         try:
             size = int(parts[1])
         except ValueError:
-            return "Size is not a number", rest
+            return Reason.INVALID_SIZE, rest
     if len(parts) >= 3:
         tipe = parts[2].upper()
         if len(tipe) != 1:
-            return "Type is not a single character", rest
+            return Reason.INVALID_TIPE, rest
         if not tipe.isalpha():
-            return "Type is not a letter", rest
+            return Reason.INVALID_TIPE, rest
 
     return Label(label, size, tipe), rest
 
 
-def _read_value(adif: str, size: int) -> Optional[Tuple[str, str]]:
+def _read_value(adif: str, size: int) -> Tuple[str | Reason, str]:
+    if adif == "" or len(adif) < size:
+        return Reason.EOF, ""
     return par.read_n(adif, size)

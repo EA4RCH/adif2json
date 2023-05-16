@@ -1,11 +1,11 @@
-from adif2json.adif import _read_label, Label
+from adif2json.adif import _read_label, Label, Reason
 
 
 def test_empty():
     imput = ''
     res, _ = _read_label(imput)
 
-    assert res is None
+    assert res == Reason.EOF
     assert imput == ''
 
 
@@ -13,24 +13,21 @@ def test_no_match():
     imput = 'abc'
     res, _ = _read_label(imput)
 
-    assert res is None
+    assert res == Reason.EOF
     assert imput == 'abc'
 
 
 def _check_label(imput, label, size, tipe, rem):
     res = _read_label(imput)
 
-    if res:
-        l, r = res
-        if isinstance(l, Label):
-            assert l.label == label
-            assert l.size == size
-            assert l.tipe == tipe
-        else:
-            assert False, 'label is not a Label'
-        assert r == rem
+    l, r = res
+    if isinstance(l, Label):
+        assert l.label == label
+        assert l.size == size
+        assert l.tipe == tipe
     else:
-        assert False, 'res is None'
+        assert False, 'label is not a Label'
+    assert r == rem
 
 
 def test_eof_label():
@@ -56,7 +53,7 @@ def test_match_w_lower_tipe():
 def _check_raises(imput):
     res, _ = _read_label(imput)
 
-    assert isinstance(res, str), res
+    assert isinstance(res, Reason), res
 
 
 def test_invalid_label():
