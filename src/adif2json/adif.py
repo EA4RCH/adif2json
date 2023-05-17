@@ -16,6 +16,7 @@ class Reason(Enum):
     INVALID_TIPE = 6
     INVALID_VALUE = 7
     EXCEEDENT_VALUE = 8
+    TRUNCATED_FILE = 9
 
 
 @dataclass
@@ -88,7 +89,7 @@ def _read_fields(adif: par.Position) -> Adif:
 
     while True:
         if isinstance(rest, par.EndOfFile):
-            return Adif(errors=[Reason.EOF])
+            return Adif(headers, qsos, errors=[Reason.TRUNCATED_FILE])
         field, rest = _read_field(rest)
         if isinstance(field, Reason):
             if field == Reason.EOF:
@@ -113,7 +114,6 @@ def _read_fields(adif: par.Position) -> Adif:
             if not current.types:
                 current.types = {}
             current.types[field.label] = field.tipe
-    raise Exception("Unexpected")
 
 
 def _read_field(adif: par.Position) -> Tuple[Field | Reason, par.Position | par.EndOfFile]:
@@ -127,12 +127,10 @@ def _read_field(adif: par.Position) -> Tuple[Field | Reason, par.Position | par.
             return Reason.EOR, rest
         return Reason.INVALID_SIZE, rest
 
-    if isinstance(rest, par.EndOfFile):
-        return Reason.EOF, rest
+    if isinstance(rest, par.EndOfFile) or rest.remaining == "":
+        return Reason.TRUNCATED_FILE, rest
 
     value, rest = par.read_n(rest, label.size)
-    if isinstance(value, Reason):
-        return value, rest
     if label.tipe:
         field = Field(label.label, value, label.tipe)
     else:
@@ -141,10 +139,7 @@ def _read_field(adif: par.Position) -> Tuple[Field | Reason, par.Position | par.
     if isinstance(rest, par.EndOfFile):
         return Reason.EOF, rest
 
-    rr = par.read_until(rest, '<')
-    if not rr:
-        return field, rest
-    remaining, rest = rr
+    remaining, rest = par.read_until(rest, '<')
     if remaining.strip() != "":
         return Reason.EXCEEDENT_VALUE, rest
     return field, rest

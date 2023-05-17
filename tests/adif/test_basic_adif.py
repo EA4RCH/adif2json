@@ -116,3 +116,19 @@ def test_headers_and_qsos():
             { 'fields': {'call': 'EC5A'} },
         ]
     }
+
+
+def test_truncated_qsos():
+    imput = '<program:9>aidf2json<EOH><call:6>EA4HFF<EOR><call:5>EA4AW<EOR><call:4>EC5A'
+    res = to_dict(imput)
+    print(res)
+    assert res == {
+        "headers": {
+            "fields": {'program': 'aidf2json'},
+        },
+        "qsos": [
+            { 'fields': {'call': 'EA4HFF'} },
+            { 'fields': {'call': 'EA4AW'} },
+        ],
+        "errors": ['TRUNCATED_FILE'],
+    }

@@ -58,7 +58,15 @@ def test_eoh():
 
 def test_exceedent_value():
     imput = '<call:3>EA4HFF<eor>'
-    res, rem = _read_field(Position(imput))
+    res, _ = _read_field(Position(imput))
 
     assert res == Reason.EXCEEDENT_VALUE
     assert imput == '<call:3>EA4HFF<eor>'
+
+
+def test_truncated_label():
+    imput = '<call:6'
+    res, rem = _read_field(Position(imput))
+
+    assert res == Reason.EOF
+    assert rem == EndOfFile(1, 8)
