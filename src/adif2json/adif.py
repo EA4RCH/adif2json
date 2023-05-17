@@ -52,7 +52,7 @@ def to_json(adif: str) -> str:
 
 
 def to_dict(adif: str) -> Dict:
-    adif_f = _read_fields(adif)
+    adif_f = _read_fields(par.Position(adif))
     out = {}
     if adif_f.headers:
         if len(adif_f.headers.fields) > 0:
@@ -82,8 +82,8 @@ def _read_fields(adif: par.Position) -> Adif:
     if adif.remaining == "": return Adif()
     current : Record = Record({})
     headers : Optional[Record] = None
-    qsos = []
-    errors = []
+    qsos = None
+    errors = None
     rest = adif
 
     while True:
@@ -98,9 +98,13 @@ def _read_fields(adif: par.Position) -> Adif:
                 current = Record({})
             elif field == Reason.EOR:
                 if len(current.fields) > 0:
+                    if not qsos:
+                        qsos = []
                     qsos.append(current)
                 current = Record({})
             else:
+                if not errors:
+                    errors = []
                 errors.append(field)
             continue
 
