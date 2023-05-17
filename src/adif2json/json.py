@@ -31,5 +31,4 @@ def to_adif(input_json: str) -> str:
                 else:
                     adif_out += "<{}:{}>{}".format(label, len(str(value)), value)
             adif_out += "<EOR>"
-        return adif_out
-    return ""
+    return adif_out

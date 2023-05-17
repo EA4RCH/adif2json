@@ -42,3 +42,10 @@ def test_multiple_qso_with_multiple_header():
     res = to_adif(to_json(adif)).strip()
 
     assert res == adif
+
+
+def test_multiple_qso_with_multiple_header_and_types():
+    adif = '<myheader:1:N>1<myheader2:2>12<EOH><call:6:S>EA4HFF<EOR><call:5>EA4AW<EOR>'
+    res = to_adif(to_json(adif)).strip()
+
+    assert res == adif
