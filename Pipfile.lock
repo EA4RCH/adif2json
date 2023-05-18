@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "ea900615459f0c703da09a9ae11069000eae514c6fb1f923976e45c6d3c371a9"
+            "sha256": "65f7370eecd08b18447aad61f61156a9d78571b162125625b5ac9e5d3c34037d"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -15,7 +15,12 @@
             }
         ]
     },
-    "default": {},
+    "default": {
+        "adif2json": {
+            "editable": true,
+            "path": "."
+        }
+    },
     "develop": {
         "asttokens": {
             "hashes": [
