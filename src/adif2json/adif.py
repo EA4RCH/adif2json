@@ -47,7 +47,8 @@ class Adif:
 
 
 def to_json(adif: str) -> str:
-    if adif == "": return "{\"qsos\": []}"
+    if adif == "":
+        return "{\"qsos\": []}"
     d = to_dict(adif)
     return json.dumps(d)
 
@@ -80,9 +81,10 @@ def to_dict(adif: str) -> Dict:
 
 
 def _read_fields(adif: par.Position) -> Adif:
-    if adif.remaining == "": return Adif()
-    current : Record = Record({})
-    headers : Optional[Record] = None
+    if adif.remaining == "":
+        return Adif()
+    current: Record = Record({})
+    headers: Optional[Record] = None
     qsos = None
     errors = None
     rest = adif
@@ -116,8 +118,11 @@ def _read_fields(adif: par.Position) -> Adif:
             current.types[field.label] = field.tipe
 
 
-def _read_field(adif: par.Position) -> Tuple[Field | Reason, par.Position | par.EndOfFile]:
-    label, rest =  _read_label(adif)
+Field_reason = Tuple[Field | Reason, par.Position | par.EndOfFile]
+
+
+def _read_field(adif: par.Position) -> Field_reason:
+    label, rest = _read_label(adif)
     if isinstance(label, Reason):
         return label, rest
     if not label.size or label.size < 1:
@@ -145,7 +150,10 @@ def _read_field(adif: par.Position) -> Tuple[Field | Reason, par.Position | par.
     return field, rest
 
 
-def _read_label(adif: par.Position) -> Tuple[Label | Reason, par.Position | par.EndOfFile]:
+Label_reason = Tuple[Label | Reason, par.Position | par.EndOfFile]
+
+
+def _read_label(adif: par.Position) -> Label_reason:
     rest = par.discard_forward(adif, '<')
     if isinstance(rest, par.EndOfFile):
         return Reason.EOF, rest

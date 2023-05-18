@@ -84,7 +84,7 @@ def test_one_qso():
 
     assert res == {
         "qsos": [
-            { 'fields': {'call': 'EA4HFF'} }
+            {'fields': {'call': 'EA4HFF'}}
         ]
     }, res
 
@@ -95,15 +95,20 @@ def test_several_qsos():
 
     assert res == {
         "qsos": [
-            { 'fields': {'call': 'EA4HFF'} },
-            { 'fields': {'call': 'EA4AW'} },
-            { 'fields': {'call': 'EC5A'} },
+            {'fields': {'call': 'EA4HFF'}},
+            {'fields': {'call': 'EA4AW'}},
+            {'fields': {'call': 'EC5A'}},
         ]
     }, res
 
 
 def test_headers_and_qsos():
-    imput = '<program:9>aidf2json<EOH><call:6>EA4HFF<EOR><call:5>EA4AW<EOR><call:4>EC5A<EOR>'
+    imput = """
+    <program:9>aidf2json<EOH>
+    <call:6>EA4HFF<EOR>
+    <call:5>EA4AW<EOR>
+    <call:4>EC5A<EOR>
+    """
     res = to_dict(imput)
 
     assert res == {
@@ -111,15 +116,20 @@ def test_headers_and_qsos():
             "fields": {'program': 'aidf2json'},
         },
         "qsos": [
-            { 'fields': {'call': 'EA4HFF'} },
-            { 'fields': {'call': 'EA4AW'} },
-            { 'fields': {'call': 'EC5A'} },
+            {'fields': {'call': 'EA4HFF'}},
+            {'fields': {'call': 'EA4AW'}},
+            {'fields': {'call': 'EC5A'}},
         ]
     }
 
 
 def test_truncated_qsos():
-    imput = '<program:9>aidf2json<EOH><call:6>EA4HFF<EOR><call:5>EA4AW<EOR><call:4>EC5A'
+    imput = """
+    <program:9>aidf2json<EOH>
+    <call:6>EA4HFF<EOR>
+    <call:5>EA4AW<EOR>
+    <call:4>EC5A
+    """
     res = to_dict(imput)
     print(res)
     assert res == {
@@ -127,8 +137,8 @@ def test_truncated_qsos():
             "fields": {'program': 'aidf2json'},
         },
         "qsos": [
-            { 'fields': {'call': 'EA4HFF'} },
-            { 'fields': {'call': 'EA4AW'} },
+            {'fields': {'call': 'EA4HFF'}},
+            {'fields': {'call': 'EA4AW'}},
         ],
         "errors": ['TRUNCATED_FILE'],
     }

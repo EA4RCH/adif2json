@@ -31,6 +31,7 @@ def test_field_w_tipe():
     imput = '<call:6:S>EA4HFF'
     _check_field(imput, 'call', 'S', 'EA4HFF', EndOfFile(1, 17))
 
+
 def test_eof_value():
     imput = '<call:6>EA4'
     res, rem = _read_field(Position(imput))

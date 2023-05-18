@@ -59,7 +59,8 @@ def read_forward(p: Position, c: str) -> Tuple[str, Position | EndOfFile]:
     res, rem = read_until(p, c)
     if isinstance(rem, EndOfFile):
         return res, rem
-    return res + rem.remaining[0], Position(rem.remaining[1:], rem.line, rem.column + 1)
+    p = Position(rem.remaining[1:], rem.line, rem.column + 1)
+    return res + rem.remaining[0], p
 
 
 def read_n(p: Position, n: int) -> Tuple[str, Position | EndOfFile]:
