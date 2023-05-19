@@ -45,7 +45,8 @@ def read_until(p: Position, c: str) -> Tuple[str, Position | EndOfFile]:
     """
     idx = p.remaining.find(c)
     if idx == -1:
-        return p.remaining, EndOfFile(p.line, p.column + len(p.remaining))
+        line, col = _update_position(p.remaining, p.line, p.column)
+        return p.remaining, EndOfFile(line, col)
     res, rem = read_n(p, idx)
     return res, rem
 
@@ -59,8 +60,27 @@ def read_forward(p: Position, c: str) -> Tuple[str, Position | EndOfFile]:
     res, rem = read_until(p, c)
     if isinstance(rem, EndOfFile):
         return res, rem
-    p = Position(rem.remaining[1:], rem.line, rem.column + 1)
+    line, col = _update_position(rem.remaining[0], rem.line, rem.column)
+    p = Position(rem.remaining[1:], line, col)
     return res + rem.remaining[0], p
+
+
+def _update_position(s: str, line: int, column: int) -> Tuple[int, int]:
+    if s == "":
+        return line, column
+    else:
+        if line == 0:
+            line = 1
+        if column == 0:
+            column = 1
+    while len(s) > 0:
+        if s[0] == "\n":
+            line += 1
+            column = 0
+        else:
+            column += 1
+        s = s[1:]
+    return line, column
 
 
 def read_n(p: Position, n: int) -> Tuple[str, Position | EndOfFile]:
@@ -69,8 +89,10 @@ def read_n(p: Position, n: int) -> Tuple[str, Position | EndOfFile]:
     characters read and the remaining string.
     """
     if len(p.remaining) < n:
-        return p.remaining, EndOfFile(p.line, p.column + len(p.remaining))
-    return p.remaining[:n], Position(p.remaining[n:], p.line, p.column + n)
+        line, col = _update_position(p.remaining, p.line, p.column)
+        return p.remaining, EndOfFile(line, col)
+    line, col = _update_position(p.remaining[:n], p.line, p.column)
+    return p.remaining[:n], Position(p.remaining[n:], line, col)
 
 
 def discard_n(p: Position, n: int) -> Position | EndOfFile:

@@ -19,10 +19,14 @@ def adif2json():
         print(f"No se encuentra la carpeta de salida: {carpeta_salida}")
         sys.exit(1)
 
-    out_path = os.path.join(carpeta_salida, f"{fichero_entrada}.json")
+    filename = os.path.basename(fichero_entrada)
+    out_path = os.path.join(carpeta_salida, f"{filename}.json")
 
-    with open(fichero_entrada, "r") as in_file, \
-            open(os.path.join(carpeta_salida, out_path), "w") as out_file:
+    if os.path.isfile(out_path):
+        print(f"El fichero de salida ya existe: {out_path}")
+        sys.exit(1)
+
+    with open(fichero_entrada, "r") as in_file, open(out_path, "w") as out_file:
         adif = in_file.read()
         out = to_json(adif)
         out_file.write(out)
