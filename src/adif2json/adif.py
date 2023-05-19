@@ -154,15 +154,19 @@ def _read_field(adif: par.Position) -> Field_reason:
     label, rest = _read_label(adif)
     if isinstance(label, SegmentError) or isinstance(label, ParseError):
         return label, rest
-    if not label.size or label.size < 1:
+    if not label.size:
         if label.label.upper() == "EOH":
             err = ParseError(Reason.EOH, rest.line, rest.column)
             return err, rest
-        if label.label.upper() == "EOR":
+        elif label.label.upper() == "EOR":
             err = ParseError(Reason.EOR, rest.line, rest.column)
             return err, rest
-        err = ParseError(Reason.INVALID_SIZE, rest.line, rest.column - 1)
-        return err, rest
+        elif label.size == 0:
+            field = Field(label.label, "", label.tipe)
+            return field, rest
+        else:
+            err = ParseError(Reason.INVALID_SIZE, rest.line, rest.column - 1)
+            return err, rest
 
     if isinstance(rest, par.EndOfFile) or rest.remaining == "":
         err = ParseError(Reason.TRUNCATED_FILE, rest.line, rest.column)

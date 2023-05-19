@@ -90,3 +90,8 @@ def test_truncated_label():
     assert res.column == 1
     assert res.size == 7
     assert rem == EndOfFile(1, 8)
+
+
+def test_zero_size_label():
+    imput = "<call:0> "
+    _check_field(imput, "call", None, "", Position(" ", 1, 9))
