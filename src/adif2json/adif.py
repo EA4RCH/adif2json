@@ -122,17 +122,13 @@ def _read_fields(adif: par.Position) -> Adif:
             err = ParseError(Reason.TRUNCATED_FILE, rest.line, rest.column)
             return Adif(headers, qsos, errors=[err])
         field, rest = _read_field(rest)
-        if isinstance(field, Reason) or isinstance(field, SegmentError):
-            if isinstance(field, SegmentError):
-                if not errors:
-                    errors = []
-                errors.append(field)
-            elif field == Reason.EOF:
+        if isinstance(field, ParseError) or isinstance(field, SegmentError):
+            if field.reason == Reason.EOF:
                 return Adif(headers, qsos, errors)
-            elif field == Reason.EOH:
+            elif field.reason == Reason.EOH:
                 headers = current
                 current = Record({})
-            elif field == Reason.EOR:
+            elif field.reason == Reason.EOR:
                 if len(current.fields) > 0:
                     if not qsos:
                         qsos = []
@@ -151,63 +147,94 @@ def _read_fields(adif: par.Position) -> Adif:
             current.types[field.label] = field.tipe
 
 
-Field_reason = Tuple[Field | Reason | SegmentError, par.Position | par.EndOfFile]
+Field_reason = Tuple[Field | ParseError | SegmentError, par.Position | par.EndOfFile]
 
 
 def _read_field(adif: par.Position) -> Field_reason:
     label, rest = _read_label(adif)
-    if isinstance(label, Reason) or isinstance(label, SegmentError):
+    if isinstance(label, SegmentError) or isinstance(label, ParseError):
         return label, rest
     if not label.size or label.size < 1:
         if label.label.upper() == "EOH":
-            return Reason.EOH, rest
+            err = ParseError(Reason.EOH, rest.line, rest.column)
+            return err, rest
         if label.label.upper() == "EOR":
-            return Reason.EOR, rest
-        return Reason.INVALID_SIZE, rest
+            err = ParseError(Reason.EOR, rest.line, rest.column)
+            return err, rest
+        err = ParseError(Reason.INVALID_SIZE, rest.line, rest.column - 1)
+        return err, rest
 
     if isinstance(rest, par.EndOfFile) or rest.remaining == "":
-        return Reason.TRUNCATED_FILE, rest
+        err = ParseError(Reason.TRUNCATED_FILE, rest.line, rest.column)
+        return err, rest
 
+    # read the value to make the field
     value, rest = par.read_n(rest, label.size)
     if label.tipe:
         field = Field(label.label, value, label.tipe)
     else:
         field = Field(label.label, value)
 
+    # if EOF then the value is truncated
     if isinstance(rest, par.EndOfFile):
-        return Reason.EOF, rest
+        err = ParseError(Reason.TRUNCATED_FILE, rest.line, rest.column)
+        return err, rest
 
+    # if the value is not truncated then it should be followed by a < character
+    value_end_line, value_end_column = rest.line, rest.column
     remaining, rest = par.read_until(rest, "<")
+    # but if there is remaining content then it is an error
     if remaining.strip() != "":
-        return Reason.EXCEEDENT_VALUE, rest
+        err = SegmentError(
+            Reason.EXCEEDENT_VALUE,
+            value_end_line,
+            value_end_column,
+            len(remaining),
+        )
+        return err, rest
+
+    # if everything is ok then return the field
     return field, rest
 
 
-Label_reason = Tuple[Label | Reason | SegmentError, par.Position | par.EndOfFile]
+Label_reason = Tuple[Label | ParseError | SegmentError, par.Position | par.EndOfFile]
 
 
 def _read_label(adif: par.Position) -> Label_reason:
     rest = par.discard_forward(adif, "<")
-    label_start_line, label_start_column = rest.line, rest.column
+    # keep in mind the < character for column counting
+    label_start_line, label_start_column = rest.line, rest.column - 1
     if isinstance(rest, par.EndOfFile):
-        return Reason.EOF, rest
+        err = ParseError(Reason.EOF, rest.line, rest.column)
+        return err, rest
 
     content, rest = par.read_until(rest, ">")
     if content == "":
-        return Reason.INVALID_LABEL, rest
+        err = SegmentError(
+            Reason.INVALID_LABEL, label_start_line, label_start_column, 1
+        )
+        return err, rest
     if isinstance(rest, par.EndOfFile):
-        return Reason.EOF, rest
+        err = SegmentError(
+            Reason.INVALID_LABEL, label_start_line, label_start_column, len(content) + 1
+        )
+        return err, rest
 
     parts = content.split(":")
     rest = par.discard_n(rest, 1)
     label = ""
     size = None
     tipe = None
+    # once inside the label, we don't care about the < character
+    label_start_column += 1
 
     if len(parts) >= 1:
         label = parts[0]
         if len(label) == 0:
-            return Reason.INVALID_LABEL, rest
+            err = SegmentError(
+                Reason.INVALID_LABEL, label_start_line, label_start_column, 1
+            )
+            return err, rest
     if len(parts) >= 2:
         try:
             size = int(parts[1])
@@ -216,14 +243,24 @@ def _read_label(adif: par.Position) -> Label_reason:
                 ":".join(parts[:1]), label_start_line, label_start_column
             )
             err = SegmentError(
-                Reason.INVALID_SIZE, size_start_line, size_start_column, len(parts[1])
+                Reason.INVALID_SIZE,
+                size_start_line,
+                size_start_column,
+                max(len(parts[1]), 1),
             )
             return err, rest
     if len(parts) >= 3:
         tipe = parts[2]
-        if len(tipe) != 1:
-            return Reason.INVALID_TIPE, rest
-        if not tipe.isalpha():
-            return Reason.INVALID_TIPE, rest
+        if len(tipe) != 1 or not tipe.isalpha():
+            size_start_line, size_start_column = par._update_position(
+                ":".join(parts[:2]), label_start_line, label_start_column
+            )
+            err = SegmentError(
+                Reason.INVALID_TIPE,
+                size_start_line,
+                size_start_column,
+                max(len(parts[2]), 1),
+            )
+            return err, rest
 
     return Label(label, size, tipe), rest
