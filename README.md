@@ -74,5 +74,3 @@ Aunque el proyecto `adif2json` está diseñado para manejar conversiones entre f
 - **No se realiza Conversión a Otros Formatos de Archivo de Radioaficionados:** El proyecto está específicamente diseñado para manejar archivos ADIF y JSON. No admite la conversión desde o hacia otros formatos de archivo utilizados en la radioafición.
 
 - **No Repara ni Modifica Archivos ADIF:** `adif2json` no proporciona la funcionalidad de reparar o modificar archivos ADIF. Es únicamente una herramienta de conversión.
-
-Al entender estos objetivos y limitaciones, los usuarios pueden utilizar de manera efectiva `adif2json` para sus necesidades de conversión de archivos ADIF y JSON.
