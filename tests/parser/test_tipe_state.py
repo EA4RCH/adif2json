@@ -6,9 +6,10 @@ def test_one_char_tipe():
     name = text[1:5]
     size = text[6:-1]
     s = p.Character("A", 1, 10)
-    res = p.state_machine(p.Tipe(name, size), s)
+    res, em = p.state_machine(p.Tipe(name, size), s)
 
     assert res == p.Tipe(name, size, s)
+    assert em is None
 
 
 def test_several_chars_tipe():
@@ -16,9 +17,10 @@ def test_several_chars_tipe():
     name = text[1:5]
     size = text[6:-1]
     s = p.Character("B", 1, 11)
-    res = p.state_machine(p.Tipe(name, size, text[-1]), s)
+    res, em = p.state_machine(p.Tipe(name, size, text[-1]), s)
 
-    assert res == p.IvalidLabelTipe(s)
+    assert res == p.State()
+    assert em == p.IvalidLabelTipe(s)
 
 
 def test_digit_tipe():
@@ -26,9 +28,10 @@ def test_digit_tipe():
     name = text[1:5]
     size = text[6:-1]
     s = p.Character("1", 1, 10)
-    res = p.state_machine(p.Tipe(name, size), s)
+    res, em = p.state_machine(p.Tipe(name, size), s)
 
-    assert res == p.IvalidLabelTipe(s)
+    assert res == p.State()
+    assert em == p.IvalidLabelTipe(s)
 
 
 def test_tipe_value():
@@ -36,6 +39,7 @@ def test_tipe_value():
     name = text[1:5]
     size = text[6:-2]
     s = p.Character(">", 1, 11)
-    res = p.state_machine(p.Tipe(name, size, text[-1]), s)
+    res, em = p.state_machine(p.Tipe(name, size, text[-1]), s)
 
     assert res == p.Value(name, size, [], 4, text[-1])
+    assert em is None

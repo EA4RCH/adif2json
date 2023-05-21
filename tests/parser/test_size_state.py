@@ -5,9 +5,10 @@ def test_one_number():
     previous = list(p.stream_character("<call:"))
     name = previous[1:-1]
     s = p.Character("1", 1, 1)
-    res = p.state_machine(p.Size(name, []), s)
+    res, em = p.state_machine(p.Size(name, []), s)
 
     assert res == p.Size(name, [s])
+    assert em is None
 
 
 def test_several_numbers():
@@ -15,9 +16,10 @@ def test_several_numbers():
     name = text[1:5]
     size = text[6:-1]
     s = text[-1]
-    res = p.state_machine(p.Size(name, size), s)
+    res, em = p.state_machine(p.Size(name, size), s)
 
     assert res == p.Size(name, text[6:])
+    assert em is None
 
 
 def test_invalid_size_state():
@@ -25,9 +27,10 @@ def test_invalid_size_state():
     name = text[1:5]
     size = text[6:]
     s = p.Character("a", 1, 10)
-    res = p.state_machine(p.Size(name, size), s)
+    res, em = p.state_machine(p.Size(name, size), s)
 
-    assert res == p.IvalidLabelSize(text[6:] + [s])
+    assert res == p.State()
+    assert em == p.IvalidLabelSize(text[6:] + [s])
 
 
 def invalid_size_first():
@@ -35,9 +38,10 @@ def invalid_size_first():
     name = text[1:5]
     size = text[6:]
     s = p.Character("1", 1, 10)
-    res = p.state_machine(p.Size(name, size), s)
+    res, em = p.state_machine(p.Size(name, size), s)
 
-    assert res == p.IvalidLabelSize(text[6:] + [s])
+    assert res == p.State()
+    assert em == p.IvalidLabelSize(text[6:] + [s])
 
 
 def test_simple_value():
@@ -45,9 +49,10 @@ def test_simple_value():
     name = text[1:5]
     size = text[6:]
     s = p.Character(">", 1, 10)
-    res = p.state_machine(p.Size(name, size), s)
+    res, em = p.state_machine(p.Size(name, size), s)
 
     assert res == p.Value(name, size, [], 4)
+    assert em is None
 
 
 def test_just_tipe():
@@ -55,6 +60,7 @@ def test_just_tipe():
     name = text[1:5]
     size = text[6:]
     s = p.Character(":", 1, 10)
-    res = p.state_machine(p.Size(name, size), s)
+    res, em = p.state_machine(p.Size(name, size), s)
 
     assert res == p.Tipe(name, size)
+    assert em is None

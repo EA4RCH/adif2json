@@ -6,9 +6,10 @@ def test_zero_size_value():
     name = text[1:5]
     size = text[6:-1]
     s = p.Character(" ", 1, 10)
-    res = p.state_machine(p.Value(name, size, [], 0), s)
+    res, em = p.state_machine(p.Value(name, size, [], 0), s)
 
-    assert res == p.Remainder(name, size, [])
+    assert res == p.Remainder([s])
+    assert em == p.Value(name, size, [], 0)
 
 
 def test_read_first_value_char():
@@ -16,9 +17,10 @@ def test_read_first_value_char():
     name = text[1:5]
     size = text[6:-1]
     s = p.Character("A", 1, 10)
-    res = p.state_machine(p.Value(name, size, [], 4), s)
+    res, em = p.state_machine(p.Value(name, size, [], 4), s)
 
     assert res == p.Value(name, size, [s], 3)
+    assert em is None
 
 
 def test_last_value_char():
@@ -28,9 +30,10 @@ def test_last_value_char():
     value = text[7:]
     s = p.Character("A", 1, 12)
     # ugly side effect, value is modified
-    res = p.state_machine(p.Value(name, size, value, 1), s)
+    res, em = p.state_machine(p.Value(name, size, value, 1), s)
 
     assert res == p.Value(name, size, value, 0)
+    assert em is None
 
 
 def test_enter_remainder():
@@ -40,9 +43,10 @@ def test_enter_remainder():
     value = text[7:]
     s = p.Character(" ", 1, 13)
 
-    res = p.state_machine(p.Value(name, size, value, 0), s)
+    res, em = p.state_machine(p.Value(name, size, value, 0), s)
 
-    assert res == p.Remainder(name, size, value)
+    assert res == p.Remainder([s])
+    assert em == p.Value(name, size, value, 0)
 
 
 def test_truncated_value():
@@ -52,6 +56,7 @@ def test_truncated_value():
     value = text[7:]
     s = p.Character("<", 1, 12)
     # ugly side effect, value is modified
-    res = p.state_machine(p.Value(name, size, value, 1), s)
+    res, em = p.state_machine(p.Value(name, size, value, 1), s)
 
-    assert res == p.TruncatedValue(value)
+    assert res == p.Name([])
+    assert em == p.TruncatedValue(value)

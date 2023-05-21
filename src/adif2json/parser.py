@@ -148,6 +148,11 @@ class State:
 
 
 @dataclass
+class EmitState:
+    pass
+
+
+@dataclass
 class Name:
     name: List[Character]
 
@@ -164,7 +169,7 @@ class Size:
 
 
 @dataclass
-class IvalidLabelSize:
+class IvalidLabelSize(EmitState):
     size: List[Character]
 
 
@@ -176,12 +181,12 @@ class Tipe:
 
 
 @dataclass
-class IvalidLabelTipe:
+class IvalidLabelTipe(EmitState):
     tipe: Character
 
 
 @dataclass
-class Value:
+class Value(EmitState):
     name: List[Character]
     size: List[Character]
     value: List[Character]
@@ -190,31 +195,27 @@ class Value:
 
 
 @dataclass
-class TruncatedValue:
+class TruncatedValue(EmitState):
     value: List[Character]
 
 
 @dataclass
 class Remainder:
-    name: List[Character]
-    size: List[Character]
-    value: List[Character]
-    tipe: Optional[Character] = None
-    remainder: Optional[List[Character]] = None
-
-
-@dataclass
-class ExceededValue:
     remainder: List[Character]
 
 
 @dataclass
-class Eoh:
+class ExceededValue(EmitState):
+    remainder: List[Character]
+
+
+@dataclass
+class Eoh(EmitState):
     pass
 
 
 @dataclass
-class Eor:
+class Eor(EmitState):
     pass
 
 
@@ -224,57 +225,59 @@ def state_machine(_: Any, __: Any) -> Any:
 
 
 @state_machine.register
-def _(st: State, c: Character) -> State | Name:
+def _(st: State, c: Character) -> Tuple[State | Name, Optional[EmitState]]:
     """
     The fundamental state is discarding characters until we find a
     character <.
     """
     if c.character == "<":
-        return Name([])
-    return st
+        return Name([]), None
+    return st, None
 
 
 @state_machine.register
-def _(st: Name, c: Character) -> Eoh | Eor | IvalidLabelSize | Size | Name:
+def _(st: Name, c: Character) -> Tuple[Size | Name | State, Optional[EmitState]]:
     """
     Reading the name, will accumulate chars until we find a >
     or a :.
     """
     if c.character == ">":
         if is_char_seq_equals(map(lambda x: x.character.upper(), st.name), "EOH"):
-            return Eoh()
+            return State(), Eoh()
         elif is_char_seq_equals(map(lambda x: x.character.upper(), st.name), "EOR"):
-            return Eor()
+            return State(), Eor()
         else:
-            return IvalidLabelSize(st.name)
+            return State(), IvalidLabelSize(st.name)
     elif c.character == ":":
-        return Size(st.name, [])
+        return Size(st.name, []), None
     else:
         st.name.append(c)
-    return st
+    return st, None
 
 
 @state_machine.register
-def _(st: Size, c: Character) -> Size | Tipe | Value | IvalidLabelSize:
+def _(
+    st: Size, c: Character
+) -> Tuple[Size | Tipe | Value | State, Optional[EmitState]]:
     """
     Will keep acumulating chars until we find a : or a >.
     if we find a no numerical value (a-z) then will return an
     invalid size state
     """
     if c.character == ":":
-        return Tipe(st.name, st.size)
+        return Tipe(st.name, st.size), None
     elif c.character == ">":
         n = int(charlist_to_str(st.size))
-        return Value(st.name, st.size, [], n)
+        return Value(st.name, st.size, [], n), None
     elif c.character.isdigit():
         st.size.append(c)
     else:
-        return IvalidLabelSize(st.size + [c])
-    return st
+        return State(), IvalidLabelSize(st.size + [c])
+    return st, None
 
 
 @state_machine.register
-def _(st: Tipe, c: Character) -> Tipe | Value | IvalidLabelTipe:
+def _(st: Tipe, c: Character) -> Tuple[Tipe | Value | State, Optional[EmitState]]:
     """
     Tipe is a one character string. Represent the type of the value.
     if we find a no numerical value (a-z) then will return an
@@ -283,19 +286,19 @@ def _(st: Tipe, c: Character) -> Tipe | Value | IvalidLabelTipe:
     """
     if c.character == ">":
         if st.tipe is None:
-            return IvalidLabelTipe(c)
+            return State(), IvalidLabelTipe(c)
         n = int(charlist_to_str(st.size))
-        return Value(st.name, st.size, [], n, st.tipe)
+        return Value(st.name, st.size, [], n, st.tipe), None
     elif c.character.isdigit():
-        return IvalidLabelTipe(c)
+        return State(), IvalidLabelTipe(c)
     elif st.tipe is None:
         st.tipe = c
-        return st
-    return IvalidLabelTipe(c)
+        return st, None
+    return State(), IvalidLabelTipe(c)
 
 
 @state_machine.register
-def _(st: Value, c: Character) -> Value | TruncatedValue | Remainder:
+def _(st: Value, c: Character) -> Tuple[Value | Name | Remainder, Optional[EmitState]]:
     """
     Will read the value until size is reached.
     if we find a < and size is greater than 0 then will return a
@@ -304,19 +307,21 @@ def _(st: Value, c: Character) -> Value | TruncatedValue | Remainder:
     """
     if c.character == "<":
         if st.current_size > 0:
-            return TruncatedValue(st.value)
+            return Name([]), TruncatedValue(st.value)
         else:
-            return Remainder(st.name, st.size, st.value, st.tipe)
+            return Name([]), st
     elif st.current_size == 0:
-        return Remainder(st.name, st.size, st.value, st.tipe)
+        return Remainder([c]), st
     else:
         st.value.append(c)
         st.current_size -= 1
-    return st
+    return st, None
 
 
 @state_machine.register
-def _(st: Remainder, c: Character) -> Remainder | Name | ExceededValue:
+def _(
+    st: Remainder, c: Character
+) -> Tuple[Remainder | Name | ExceededValue, Optional[EmitState]]:
     """
     Will read the value until size is reached.
     if we find a < and size is greater than 0 then will return a
@@ -325,11 +330,11 @@ def _(st: Remainder, c: Character) -> Remainder | Name | ExceededValue:
     """
     if c.character == "<":
         if st.remainder and len(st.remainder) > 0:
-            return ExceededValue(st.remainder)
+            return Name([]), ExceededValue(st.remainder)
         else:
-            return Name([])
+            return Name([]), None
     elif not c.character.isspace():
         if not st.remainder:
             st.remainder = []
         st.remainder.append(c)
-    return st
+    return st, None
