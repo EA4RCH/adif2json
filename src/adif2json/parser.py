@@ -158,7 +158,7 @@ class Name:
 
 
 @dataclass
-class IvalidLabel:
+class IvalidLabel(EmitState):
     name: List[Character]
 
 
@@ -249,6 +249,8 @@ def _(st: Name, c: Character) -> Tuple[Size | Name | State, Optional[EmitState]]
         else:
             return State(), IvalidLabelSize(st.name)
     elif c.character == ":":
+        if len(st.name) == 0:
+            return State(), IvalidLabel([c])
         return Size(st.name, []), None
     else:
         st.name.append(c)

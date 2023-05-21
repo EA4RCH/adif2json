@@ -3,7 +3,7 @@ import adif2json.parser as par
 
 import json
 from enum import Enum
-from typing import Optional, Tuple, Dict, List
+from typing import Iterator, Optional, Dict, List
 from dataclasses import dataclass, asdict
 
 
@@ -29,9 +29,10 @@ class ParseError:
 @dataclass
 class SegmentError:
     reason: Reason
-    line: int
-    column: int
-    size: int
+    start_line: int
+    start_column: int
+    end_line: int
+    end_column: int
 
 
 @dataclass
@@ -147,124 +148,78 @@ def _read_fields(adif: par.Position) -> Adif:
             current.types[field.label] = field.tipe
 
 
-Field_reason = Tuple[Field | ParseError | SegmentError, par.Position | par.EndOfFile]
+Field_reason = Field | ParseError | SegmentError | Reason
 
 
-def _read_field(adif: par.Position) -> Field_reason:
-    label, rest = _read_label(adif)
-    if isinstance(label, SegmentError) or isinstance(label, ParseError):
-        return label, rest
-    if not label.size:
-        if label.label.upper() == "EOH":
-            err = ParseError(Reason.EOH, rest.line, rest.column)
-            return err, rest
-        elif label.label.upper() == "EOR":
-            err = ParseError(Reason.EOR, rest.line, rest.column)
-            return err, rest
-        elif label.size == 0:
-            field = Field(label.label, "", label.tipe)
-            return field, rest
-        else:
-            err = ParseError(Reason.INVALID_SIZE, rest.line, rest.column - 1)
-            return err, rest
-
-    if isinstance(rest, par.EndOfFile) or rest.remaining == "":
-        err = ParseError(Reason.TRUNCATED_FILE, rest.line, rest.column)
-        return err, rest
-
-    # read the value to make the field
-    value, rest = par.read_n(rest, label.size)
-    if label.tipe:
-        field = Field(label.label, value, label.tipe)
-    else:
-        field = Field(label.label, value)
-
-    # if EOF then the value is truncated
-    if isinstance(rest, par.EndOfFile):
-        err = ParseError(Reason.TRUNCATED_FILE, rest.line, rest.column)
-        return err, rest
-
-    # if the value is not truncated then it should be followed by a < character
-    value_end_line, value_end_column = rest.line, rest.column
-    remaining, rest = par.read_until(rest, "<")
-    # but if there is remaining content then it is an error
-    if remaining.strip() != "":
-        err = SegmentError(
-            Reason.EXCEEDENT_VALUE,
-            value_end_line,
-            value_end_column,
-            len(remaining),
-        )
-        return err, rest
-
-    # if everything is ok then return the field
-    return field, rest
-
-
-Label_reason = Tuple[Label | ParseError | SegmentError, par.Position | par.EndOfFile]
-
-
-def _read_label(adif: par.Position) -> Label_reason:
-    rest = par.discard_forward(adif, "<")
-    # keep in mind the < character for column counting
-    label_start_line, label_start_column = rest.line, rest.column - 1
-    if isinstance(rest, par.EndOfFile):
-        err = ParseError(Reason.EOF, rest.line, rest.column)
-        return err, rest
-
-    content, rest = par.read_until(rest, ">")
-    if content == "":
-        err = SegmentError(
-            Reason.INVALID_LABEL, label_start_line, label_start_column, 1
-        )
-        return err, rest
-    if isinstance(rest, par.EndOfFile):
-        err = SegmentError(
-            Reason.INVALID_LABEL, label_start_line, label_start_column, len(content) + 1
-        )
-        return err, rest
-
-    parts = content.split(":")
-    rest = par.discard_n(rest, 1)
-    label = ""
-    size = None
-    tipe = None
-    # once inside the label, we don't care about the < character
-    label_start_column += 1
-
-    if len(parts) >= 1:
-        label = parts[0]
-        if len(label) == 0:
-            err = SegmentError(
-                Reason.INVALID_LABEL, label_start_line, label_start_column, 1
+def _read_field(adif: Iterator[par.Character]) -> Iterator[Field_reason]:
+    def _par2reason(emit: par.EmitState) -> Field_reason:
+        if isinstance(emit, par.Value):
+            if emit.tipe:
+                field = Field(
+                    par.charlist_to_str(emit.name),
+                    par.charlist_to_str(emit.value),
+                    emit.tipe.character,
+                )
+            else:
+                field = Field(
+                    par.charlist_to_str(emit.name),
+                    par.charlist_to_str(emit.value),
+                )
+            return field
+        elif isinstance(emit, par.Eoh):
+            return Reason.EOH
+        elif isinstance(emit, par.Eor):
+            return Reason.EOR
+        elif isinstance(emit, par.IvalidLabel):
+            return ParseError(
+                Reason.INVALID_LABEL, emit.name[0].line, emit.name[0].column
             )
-            return err, rest
-    if len(parts) >= 2:
-        try:
-            size = int(parts[1])
-        except ValueError:
-            size_start_line, size_start_column = par._update_position(
-                ":".join(parts[:1]), label_start_line, label_start_column
+        elif isinstance(emit, par.ExceededValue):
+            return SegmentError(
+                Reason.EXCEEDENT_VALUE,
+                emit.remainder[0].line,
+                emit.remainder[0].column,
+                emit.remainder[-1].line,
+                emit.remainder[-1].column,
             )
-            err = SegmentError(
+        elif isinstance(emit, par.IvalidLabelSize):
+            return SegmentError(
                 Reason.INVALID_SIZE,
-                size_start_line,
-                size_start_column,
-                max(len(parts[1]), 1),
+                emit.size[0].line,
+                emit.size[0].column,
+                emit.size[-1].line,
+                emit.size[-1].column,
             )
-            return err, rest
-    if len(parts) >= 3:
-        tipe = parts[2]
-        if len(tipe) != 1 or not tipe.isalpha():
-            size_start_line, size_start_column = par._update_position(
-                ":".join(parts[:2]), label_start_line, label_start_column
-            )
-            err = SegmentError(
-                Reason.INVALID_TIPE,
-                size_start_line,
-                size_start_column,
-                max(len(parts[2]), 1),
-            )
-            return err, rest
+        else:
+            print(emit)
+            raise NotImplementedError
 
-    return Label(label, size, tipe), rest
+    last_line = 0
+    last_column = 0
+    state = par.State()
+    for s in adif:
+        state, emit = par.state_machine(state, s)
+        if emit is not None:
+            yield _par2reason(emit)
+        last_line = s.line
+        last_column = s.column
+
+    # check final state
+    state, emit = par.state_machine(
+        state, par.Character(" ", last_line, last_column + 1)
+    )
+    if emit is not None:
+        yield _par2reason(emit)
+    if isinstance(state, par.State) or isinstance(state, par.Remainder):
+        print("end of file")
+    elif isinstance(state, par.Value):
+        yield SegmentError(
+            Reason.TRUNCATED_FILE,
+            state.name[0].line,
+            state.name[0].column,
+            last_line,
+            last_column,
+        )
+    else:
+        print("state: ", state)
+        yield ParseError(Reason.TRUNCATED_FILE, last_line, last_column)
