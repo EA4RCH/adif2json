@@ -81,13 +81,10 @@ def test_first_header_bad_then_right():
     assert (
         err["reason"] == "INVALID_SIZE"
     ), "First header bad then right should return error INVALID_SIZE"
-    assert err["line"] == 1, "First header bad then right should return error in line 1"
-    assert (
-        err["column"] == 5
-    ), "First header bad then right should return error in column 5"
-    assert (
-        err["size"] == 1
-    ), "First header bad then right should return error with size 1"
+    assert err["start_line"] == 1
+    assert err["start_column"] == 6
+    assert err["end_line"] == 1
+    assert err["end_column"] == 6
 
 
 def test_all_bad_headers():
@@ -98,14 +95,16 @@ def test_all_bad_headers():
     assert len(res["errors"]) == 2, "Two errors expected"
     err1 = res["errors"][0]
     assert err1["reason"] == "INVALID_SIZE", "First error expected to be INVALID_SIZE"
-    assert err1["line"] == 1, "First error expected to be in line 1"
-    assert err1["column"] == 5, "First error expected to be in column 5"
-    assert err1["size"] == 1, "First error expected to be of size 1"
+    assert err1["start_line"] == 1
+    assert err1["start_column"] == 6
+    assert err1["end_line"] == 1
+    assert err1["end_column"] == 6
     err2 = res["errors"][1]
     assert err2["reason"] == "INVALID_SIZE", "Second error expected to be INVALID_SIZE"
-    assert err2["line"] == 2, "Second error expected to be in line 2"
-    assert err2["column"] == 6, "Second error expected to be in column 6"
-    assert err2["size"] == 1, "Second error expected to be of size 1"
+    assert err2["start_line"] == 2
+    assert err2["start_column"] == 7
+    assert err2["end_line"] == 2
+    assert err2["end_column"] == 7
 
 
 def test_last_bad_header():
@@ -127,9 +126,10 @@ def test_last_bad_header():
     assert (
         err["reason"] == "INVALID_SIZE"
     ), "Last header bad should return error INVALID_SIZE"
-    assert err["line"] == 2, "Last header bad should return error in line 2"
-    assert err["column"] == 5, "Last header bad should return error in column 5"
-    assert err["size"] == 1, "Last header bad should return error with size 1"
+    assert err["start_line"] == 2
+    assert err["start_column"] == 6
+    assert err["end_line"] == 2
+    assert err["end_column"] == 6
 
 
 def test_one_qso():
@@ -241,7 +241,7 @@ def test_truncated_qsos():
         fields["program"] == "aidf2json"
     ), "Truncated qsos should return program aidf2json"
     assert "qsos" in res, "Truncated qsos should return qsos"
-    assert len(res["qsos"]) == 2, "Truncated qsos should return two qsos"
+    assert len(res["qsos"]) == 3, "Truncated qsos should return three qsos"
     qso = res["qsos"][0]
     assert "fields" in qso, "Truncated qsos should return qso with fields"
     fields = qso["fields"]
@@ -252,6 +252,11 @@ def test_truncated_qsos():
     fields = qso["fields"]
     assert "call" in fields, "Truncated qsos should return field named call"
     assert fields["call"] == "EA4AW", "Truncated qsos should return call EA4AW"
+    qso = res["qsos"][2]
+    assert "fields" in qso, "Truncated qsos should return qso with fields"
+    fields = qso["fields"]
+    assert "call" in fields, "Truncated qsos should return field named call"
+    assert fields["call"] == "EC5A", "Truncated qsos should return call EC5A"
     assert "errors" in res, "Truncated qsos should return errors"
     assert len(res["errors"]) == 1, "Truncated qsos should return one error"
     error = res["errors"][0]

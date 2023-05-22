@@ -69,8 +69,8 @@ def to_json(adif: str) -> str:
     return json.dumps(d)
 
 
-def to_dict(adif: str) -> Dict:
-    adif_f = _read_fields(par.Position(adif))
+def to_dict(adif: Iterator[str] | str) -> Dict:
+    adif_f = _read_fields(par.stream_character(adif))
     out = {}
     if adif_f.headers:
         if len(adif_f.headers.fields) > 0:
@@ -99,9 +99,10 @@ def to_dict(adif: str) -> Dict:
         ] + [
             {
                 "reason": e.reason.name,
-                "line": e.line,
-                "column": e.column,
-                "size": e.size,
+                "start_line": e.start_line,
+                "start_column": e.start_column,
+                "end_line": e.end_line,
+                "end_column": e.end_column,
             }
             for e in adif_f.errors
             if isinstance(e, SegmentError)
@@ -109,43 +110,39 @@ def to_dict(adif: str) -> Dict:
     return out
 
 
-def _read_fields(adif: par.Position) -> Adif:
-    if adif.remaining == "":
-        return Adif()
+def _read_fields(adif: Iterator[par.Character]) -> Adif:
     current: Record = Record({})
     headers: Optional[Record] = None
     qsos = None
     errors = None
-    rest = adif
 
-    while True:
-        if isinstance(rest, par.EndOfFile):
-            err = ParseError(Reason.TRUNCATED_FILE, rest.line, rest.column)
-            return Adif(headers, qsos, errors=[err])
-        field, rest = _read_field(rest)
-        if isinstance(field, ParseError) or isinstance(field, SegmentError):
-            if field.reason == Reason.EOF:
-                return Adif(headers, qsos, errors)
-            elif field.reason == Reason.EOH:
-                headers = current
-                current = Record({})
-            elif field.reason == Reason.EOR:
-                if len(current.fields) > 0:
-                    if not qsos:
-                        qsos = []
-                    qsos.append(current)
-                current = Record({})
-            else:
-                if not errors:
-                    errors = []
-                errors.append(field)
+    for maybe_field in _read_field(adif):
+        if isinstance(maybe_field, ParseError) or isinstance(maybe_field, SegmentError):
+            if not errors:
+                errors = []
+            errors.append(maybe_field)
             continue
-
-        current.fields[field.label] = field.value
-        if field.tipe:
-            if not current.types:
-                current.types = {}
-            current.types[field.label] = field.tipe
+        elif maybe_field == Reason.EOH:
+            headers = current
+            current = Record({})
+        elif maybe_field == Reason.EOR:
+            if len(current.fields) > 0:
+                if not qsos:
+                    qsos = []
+                qsos.append(current)
+            current = Record({})
+        elif isinstance(maybe_field, Field):
+            current.fields[maybe_field.label] = maybe_field.value
+            if maybe_field.tipe:
+                if not current.types:
+                    current.types = {}
+                current.types[maybe_field.label] = maybe_field.tipe
+    # TODO: check if there is qso ongoing to return a truncated file error
+    if len(current.fields) > 0:
+        if not qsos:
+            qsos = []
+        qsos.append(current)
+    return Adif(headers, qsos, errors)
 
 
 Field_reason = Field | ParseError | SegmentError | Reason
@@ -190,6 +187,14 @@ def _read_field(adif: Iterator[par.Character]) -> Iterator[Field_reason]:
                 emit.size[-1].line,
                 emit.size[-1].column,
             )
+        elif isinstance(emit, par.IvalidLabelTipe):
+            if not emit.tipe:
+                raise NotImplementedError
+            return ParseError(
+                Reason.INVALID_TIPE,
+                emit.tipe.line,
+                emit.tipe.column,
+            )
         else:
             print(emit)
             raise NotImplementedError
@@ -197,22 +202,37 @@ def _read_field(adif: Iterator[par.Character]) -> Iterator[Field_reason]:
     last_line = 0
     last_column = 0
     state = par.State()
+    record_open = False
     for s in adif:
         state, emit = par.state_machine(state, s)
         if emit is not None:
-            yield _par2reason(emit)
+            em = _par2reason(emit)
+            if isinstance(em, Field):
+                record_open = True
+            elif em == Reason.EOR:
+                record_open = False
+            elif em == Reason.EOH:
+                record_open = False
+            yield em
         last_line = s.line
         last_column = s.column
 
-    # check final state
     state, emit = par.state_machine(
         state, par.Character(" ", last_line, last_column + 1)
     )
     if emit is not None:
-        yield _par2reason(emit)
-    if isinstance(state, par.State) or isinstance(state, par.Remainder):
-        print("end of file")
-    elif isinstance(state, par.Value):
+        em = _par2reason(emit)
+        if isinstance(em, Field):
+            record_open = True
+        elif em == Reason.EOR:
+            record_open = False
+        elif em == Reason.EOH:
+            record_open = False
+        yield em
+
+    if record_open:
+        yield ParseError(Reason.TRUNCATED_FILE, last_line, last_column)
+    if isinstance(state, par.Value):
         yield SegmentError(
             Reason.TRUNCATED_FILE,
             state.name[0].line,
@@ -220,6 +240,4 @@ def _read_field(adif: Iterator[par.Character]) -> Iterator[Field_reason]:
             last_line,
             last_column,
         )
-    else:
-        print("state: ", state)
-        yield ParseError(Reason.TRUNCATED_FILE, last_line, last_column)
+        return

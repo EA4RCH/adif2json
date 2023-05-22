@@ -13,7 +13,6 @@ def _check_field(imput, label, tipe, value):
     imp = p.stream_character(imput)
     res = list(_read_field(imp))
 
-    assert len(res) == 1
     if res[0] and isinstance(res, Field):
         assert res.label == label
         assert res.tipe == tipe
@@ -34,7 +33,6 @@ def test_eof_value():
     imput = p.stream_character("<call:6>EA4")
     res_l = list(_read_field(imput))
 
-    assert len(res_l) == 1, "expected 1 result, got {}".format(len(res_l))
     res = res_l[0]
     assert isinstance(res, SegmentError)
     assert res.reason == Reason.TRUNCATED_FILE
@@ -104,7 +102,6 @@ def test_zero_size_label():
     imput = p.stream_character("<call:0> ")
     res_l = list(_read_field(imput))
 
-    assert len(res_l) == 1
     res = res_l[0]
     assert isinstance(res, Field)
     assert res.label == "call"

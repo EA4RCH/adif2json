@@ -112,7 +112,7 @@ class Character:
     column: int
 
 
-def stream_character(s: str) -> Iterator[Character]:
+def stream_character(s: str | Iterator[str]) -> Iterator[Character]:
     l = 0
     c = 0
     for s in s:
@@ -331,7 +331,8 @@ def _(
     Will only add characters to the value. No spaces, tabs or newlines.
     """
     if c.character == "<":
-        if st.remainder and len(st.remainder) > 0:
+        rem = charlist_to_str(st.remainder).strip()
+        if len(rem) > 0:
             return Name([]), ExceededValue(st.remainder)
         else:
             return Name([]), None
