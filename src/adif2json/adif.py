@@ -18,6 +18,12 @@ class Reason(Enum):
     EXCEEDENT_VALUE = 8
     TRUNCATED_FILE = 9
 
+    @classmethod
+    def tostring(cls, val):
+        for k, v in vars(cls).iteritems():
+            if v == val:
+                return k
+
 
 @dataclass
 class ParseError:
@@ -52,7 +58,9 @@ class Field:
 @dataclass
 class Record:
     fields: Dict[str, str]
+    type: Optional[str] = None
     types: Optional[Dict[str, str]] = None
+    errors: Optional[List[Dict[str, str]]] = None
 
 
 @dataclass
@@ -62,74 +70,52 @@ class Adif:
     errors: Optional[List[ParseError | SegmentError]] = None
 
 
-def to_json(adif: str) -> str:
+def to_json(adif: Iterator[str] | str) -> Iterator[str]:
     if adif == "":
-        return '{"qsos": []}'
-    d = to_dict(adif)
-    return json.dumps(d)
+        yield "{}"
+    dicts = to_dict(adif)
+    for d in dicts:
+        yield json.dumps(d)
 
 
-def to_dict(adif: Iterator[str] | str) -> Dict:
-    adif_f = _read_fields(par.stream_character(adif))
-    out = {}
-    if adif_f.headers:
-        if len(adif_f.headers.fields) > 0:
-            h = {}
-            if adif_f.headers.types:
-                h["types"] = adif_f.headers.types
-            h["fields"] = adif_f.headers.fields
-            out["headers"] = h
-        else:
-            out["headers"] = None
-    if adif_f.qsos:
-        qsos = []
-        [asdict(qso) for qso in adif_f.qsos]
-        for r in adif_f.qsos:
-            q = {}
-            if r.types:
-                q["types"] = r.types
-            q["fields"] = r.fields
-            qsos.append(q)
-        out["qsos"] = qsos
-    if adif_f.errors:
-        out["errors"] = [
-            {"reason": e.reason.name, "line": e.line, "column": e.column}
-            for e in adif_f.errors
-            if isinstance(e, ParseError)
-        ] + [
-            {
-                "reason": e.reason.name,
-                "start_line": e.start_line,
-                "start_column": e.start_column,
-                "end_line": e.end_line,
-                "end_column": e.end_column,
-            }
-            for e in adif_f.errors
-            if isinstance(e, SegmentError)
-        ]
-    return out
+def _custom_asdict_factory(data):
+    def convert_value(obj):
+        if isinstance(obj, Enum):
+            return obj.name
+        return obj
+
+    return dict((k, convert_value(v)) for k, v in data)
 
 
-def _read_fields(adif: Iterator[par.Character]) -> Adif:
-    current: Record = Record({})
+def to_dict(adif: Iterator[str] | str) -> Iterator[Dict]:
+    records = _read_fields(par.stream_character(adif))
+
+    for record in records:
+        record_dict = asdict(record, dict_factory=_custom_asdict_factory)
+        yield record_dict
+
+
+def _read_fields(adif: Iterator[par.Character]) -> Iterator[Record]:
     headers: Optional[Record] = None
-    qsos = None
-    errors = None
+    current: Record = Record({})
 
     for maybe_field in _read_field(adif):
         if isinstance(maybe_field, ParseError) or isinstance(maybe_field, SegmentError):
-            if not errors:
-                errors = []
-            errors.append(maybe_field)
+            if not current.errors:
+                current.errors = []
+            current.errors.append(
+                asdict(maybe_field, dict_factory=_custom_asdict_factory)
+            )
             continue
         elif maybe_field == Reason.EOH:
             headers = current
+            headers.type = "headers"
+            yield headers
             current = Record({})
         elif maybe_field == Reason.EOR:
             if len(current.fields) > 0:
-                if not qsos:
-                    qsos = []
-                qsos.append(current)
+                current.type = "qso"
+                yield current
             current = Record({})
         elif isinstance(maybe_field, Field):
             current.fields[maybe_field.label] = maybe_field.value
@@ -139,10 +125,8 @@ def _read_fields(adif: Iterator[par.Character]) -> Adif:
                 current.types[maybe_field.label] = maybe_field.tipe
     # TODO: check if there is qso ongoing to return a truncated file error
     if len(current.fields) > 0:
-        if not qsos:
-            qsos = []
-        qsos.append(current)
-    return Adif(headers, qsos, errors)
+        current.type = "qso"
+        yield current
 
 
 Field_reason = Field | ParseError | SegmentError | Reason

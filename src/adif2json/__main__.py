@@ -4,6 +4,27 @@ import os
 from adif2json.adif import to_json
 
 
+def archivo_streaming(nombre_archivo, tamano_bloque=1024):
+    resto = b""
+    with open(nombre_archivo, "rb") as f:
+        while True:
+            bloque = resto + f.read(tamano_bloque)
+            if not bloque:
+                break
+            try:
+                u = bloque.decode("utf-8")
+            except UnicodeDecodeError as e:
+                resto = bloque[e.start :]
+                bloque = bloque[: e.start]
+                continue
+            else:
+                resto = b""
+            for c in u:
+                yield c
+            if resto:
+                yield resto.decode("utf-8", "ignore")
+
+
 def adif2json():
     if len(sys.argv) != 3:
         print("Uso: adif2json <fichero_entrada> <carpeta_salida>")
@@ -26,7 +47,7 @@ def adif2json():
         print(f"El fichero de salida ya existe: {out_path}")
         sys.exit(1)
 
-    with open(fichero_entrada, "r") as in_file, open(out_path, "w") as out_file:
-        adif = in_file.read()
+    with open(out_path, "w") as out_file:
+        adif = archivo_streaming(fichero_entrada)
         out = to_json(adif)
         out_file.write(out)

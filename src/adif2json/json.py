@@ -7,30 +7,18 @@ def to_adif(input_json: str) -> str:
     """
     content = json.loads(input_json)
     adif_out = ""
-    if "headers" in content:
-        headers = content["headers"]
-        if "fields" in headers:
-            for label in headers["fields"].keys():
-                value = headers["fields"][label]
-                tipe = None
-                if "types" in headers and label in headers["types"]:
-                    tipe = headers["types"][label]
-                if tipe:
-                    adif_out += f"<{label}:{len(value)}:{tipe}>{value}"
-                else:
-                    adif_out += f"<{label}:{len(value)}>{value}"
-            adif_out += "<EOH>"
-    if "qsos" in content:
-        qsos = content["qsos"]
-        for qso in qsos:
-            for label in qso["fields"].keys() if "fields" in qso else []:
-                value = qso["fields"][label]
-                tipe = None
-                if "types" in qso and label in qso["types"]:
-                    tipe = qso["types"][label]
-                if tipe:
-                    adif_out += f"<{label}:{len(value)}:{tipe}>{value}"
-                else:
-                    adif_out += f"<{label}:{len(value)}>{value}"
-            adif_out += "<EOR>"
+    if "fields" in content:
+        for label in content["fields"].keys():
+            value = content["fields"][label]
+            tipe = None
+            if "types" in content and label in content["types"]:
+                tipe = content["types"][label]
+            if tipe:
+                adif_out += f"<{label}:{len(value)}:{tipe}>{value}"
+            else:
+                adif_out += f"<{label}:{len(value)}>{value}"
+    if "type" in content and content["type"] == "headers":
+        adif_out += "<EOH>"
+    else:
+        adif_out += "<EOR>"
     return adif_out
