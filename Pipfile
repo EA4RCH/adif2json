@@ -11,6 +11,9 @@ pytest = "*"
 ipdb = "*"
 pytest-cov = "*"
 pylint = "*"
+pyslp = "*"
+pyls = "*"
+debugpy = "*"
 
 [requires]
 python_version = "3.11"

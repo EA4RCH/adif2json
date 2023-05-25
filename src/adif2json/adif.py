@@ -113,7 +113,10 @@ def _read_fields(adif: Iterator[par.Character]) -> Iterator[Record]:
             yield headers
             current = Record({})
         elif maybe_field == Reason.EOR:
-            if len(current.fields) > 0:
+            if current.errors and len(current.errors) > 0:
+                current.type = "qso"
+                yield current
+            elif len(current.fields) > 0:
                 current.type = "qso"
                 yield current
             current = Record({})
@@ -123,8 +126,10 @@ def _read_fields(adif: Iterator[par.Character]) -> Iterator[Record]:
                 if not current.types:
                     current.types = {}
                 current.types[maybe_field.label] = maybe_field.tipe
-    # TODO: check if there is qso ongoing to return a truncated file error
-    if len(current.fields) > 0:
+    if current.errors and len(current.errors) > 0:
+        current.type = "qso"
+        yield current
+    elif len(current.fields) > 0:
         current.type = "qso"
         yield current
 
@@ -224,4 +229,3 @@ def _read_field(adif: Iterator[par.Character]) -> Iterator[Field_reason]:
             last_line,
             last_column,
         )
-        return

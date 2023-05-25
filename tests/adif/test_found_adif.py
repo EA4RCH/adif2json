@@ -26,7 +26,30 @@ def test_good_1():
     <EOR>
     """
 
-    res = to_dict(imp)
+    res_l = list(to_dict(imp))
 
-    assert isinstance(res, dict)
-    assert "errors" not in res
+    assert len(res_l) == 1
+    res = res_l[0]
+    assert res["type"] == "qso"
+    assert len(res["fields"]) == 20
+    assert res["fields"]["QSO_DATE"] == "20230407"
+    assert res["fields"]["TIME_ON"] == "072423"
+    assert res["fields"]["TIME_OFF"] == "072423"
+    assert res["fields"]["STATION_CALLSIGN"] == "EA5HUS/2"
+    assert res["fields"]["FREQ"] == "3.5000"
+    assert res["fields"]["BAND"] == "80M"
+    assert res["fields"]["CONTEST_ID"] == "DXPED"
+    assert res["fields"]["MODE"] == "SSB"
+    assert res["fields"]["CALL"] == "EA4AVM"
+    assert res["fields"]["RST_SENT"] == "59"
+    assert res["fields"]["RST_RCVD"] == "59"
+    assert res["fields"]["APP_DXLOG_RCVD"] == ""
+    assert res["fields"]["APP_DXLOG_RECINFO"] == ""
+    assert res["fields"]["PFX"] == "EA4"
+    assert res["fields"]["APP_DXLOG_POINTS"] == "1"
+    assert res["fields"]["APP_DXLOG_STNID"] == "STN1"
+    assert res["fields"]["APP_DXLOG_MULT1"] == ""
+    assert res["fields"]["APP_DXLOG_MULT2"] == ""
+    assert res["fields"]["APP_DXLOG_MULT3"] == ""
+    assert res["fields"]["APP_DXLOG_STN"] == "R"
+    assert res["errors"] is None
