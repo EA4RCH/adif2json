@@ -70,12 +70,29 @@ class Adif:
     errors: Optional[List[ParseError | SegmentError]] = None
 
 
+def to_json_lines(adif: Iterator[str] | str) -> Iterator[str]:
+    """
+    Must return a json lines iterator.
+    """
+    if adif == "":
+        return ""
+    dicts = to_dict(adif)
+    for d in dicts:
+        yield f"{json.dumps(d)}\n"
+
+
 def to_json(adif: Iterator[str] | str) -> Iterator[str]:
     if adif == "":
         yield "{}"
     dicts = to_dict(adif)
+    first = True
     for d in dicts:
-        yield json.dumps(d)
+        if first:
+            first = False
+            yield "["
+        yield f"{json.dumps(d)},"
+    if not first:
+        yield "]"
 
 
 def _custom_asdict_factory(data):

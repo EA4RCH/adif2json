@@ -1,5 +1,5 @@
-from adif2json.adif import to_json
-from adif2json.json import to_adif
+from adif2json.adif import to_json, to_json_lines
+from adif2json.json import from_json_lines, to_adif
 
 
 def _string_similar(s1, s2):
@@ -10,35 +10,39 @@ def _string_similar(s1, s2):
 
 def test_empty():
     adif = ""
-    res = to_adif(to_json(adif))
+    js = "".join(to_json(adif))
+    res = to_adif(js)
 
     assert res == adif
 
 
 def test_simple_qso():
     adif = "<call:6>EA4HFF<EOR>"
-    res = to_adif(to_json(adif)).strip()
+    js = "".join(to_json_lines(adif))
+    res = to_adif(js).strip()
 
     assert res == adif
 
 
 def test_simple_qso_with_header():
     adif = "<myheader:1>1<EOH><call:6>EA4HFF<EOR>"
-    res = to_adif(to_json(adif)).strip()
+    json_lines = "".join(to_json_lines(adif))
+    print(json_lines)
+    res = from_json_lines(json_lines).strip()
 
     assert res == adif
 
 
 def test_multiple_header():
     adif = "<myheader:1>1<myheader2:2>12<EOH><call:6>EA4HFF<EOR>"
-    res = to_adif(to_json(adif)).strip()
+    res = from_json_lines("".join(to_json_lines(adif))).strip()
 
     assert res == adif
 
 
 def test_multiple_qso():
     adif = "<call:6>EA4HFF<EOR><call:5>EA4AW<EOR>"
-    res = to_adif(to_json(adif)).strip()
+    res = from_json_lines("".join(to_json_lines(adif))).strip()
 
     assert res == adif
 
@@ -48,7 +52,7 @@ def test_multiple_qso_with_multiple_header():
         <myheader:1>1<myheader2:2>12<EOH>
         <call:6>EA4HFF<EOR><call:5>EA4AW<EOR>
     """
-    res = to_adif(to_json(adif)).strip()
+    res = from_json_lines("".join(to_json_lines(adif))).strip()
 
     assert _string_similar(res, adif)
 
@@ -58,6 +62,6 @@ def test_multiple_qso_with_multiple_header_and_types():
         <myheader:1:N>1<myheader2:2>12<EOH>
         <call:6:S>EA4HFF<EOR><call:5>EA4AW<EOR>
     """
-    res = to_adif(to_json(adif))
+    res = from_json_lines("".join(to_json_lines(adif))).strip()
 
     assert _string_similar(res, adif)
