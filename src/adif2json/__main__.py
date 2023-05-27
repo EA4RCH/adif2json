@@ -1,7 +1,7 @@
 import sys
 import os
 
-from adif2json.adif import to_json
+from adif2json.adif import to_json_lines
 
 
 def archivo_streaming(nombre_archivo, tamano_bloque=1024):
@@ -49,5 +49,6 @@ def adif2json():
 
     with open(out_path, "w") as out_file:
         adif = archivo_streaming(fichero_entrada)
-        out = to_json(adif)
-        out_file.write(out)
+        out = to_json_lines(adif)
+        for l in out:
+            out_file.write(l)
