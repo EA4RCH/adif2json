@@ -28,10 +28,26 @@ async def read_adif(nombre_archivo):
         return adif
 
 
+async def read_adif_lines(nombre_archivo):
+    async with aiofiles.open(nombre_archivo, "r") as f:
+        async for line in f:
+            yield line
+
+
 async def write_json_lines(in_file, out_path):
     async with aiofiles.open(out_path, "w") as out_file:
-        adif = await read_adif(in_file)
-        out = to_json_lines(adif)
+        try:
+            async for l in read_adif_lines(in_file):
+                out = to_json_lines(l)
+                for l in out:
+                    await out_file.write(l)
+            return
+        except UnicodeDecodeError as e:
+            print(f"Error decoding line: {e}")
+    # fallback
+    async with aiofiles.open(out_path, "w") as out_file:
+        ad = await read_adif(in_file)
+        out = to_json_lines(ad)
         for l in out:
             await out_file.write(l)
 
