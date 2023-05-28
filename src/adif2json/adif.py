@@ -156,7 +156,8 @@ Field_reason = Field | ParseError | SegmentError | Reason
 
 
 @singledispatch
-def _par2reason(_: Any) -> Any:
+def _par2reason(x: Any) -> Any:
+    print(f"not par2reason implemented: {type(x)}")
     raise NotImplementedError
 
 
@@ -221,6 +222,15 @@ def _(emit: par.IvalidLabelTipe) -> Field_reason:
         Reason.INVALID_TIPE,
         emit.tipe.line,
         emit.tipe.column,
+    )
+
+
+@_par2reason.register
+def _(emit: par.TruncatedValue) -> Field_reason:
+    return ParseError(
+        Reason.INVALID_TIPE,
+        emit.value[-1].line,
+        emit.value[-1].column,
     )
 
 

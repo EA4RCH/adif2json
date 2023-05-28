@@ -68,7 +68,7 @@ def adif2json():
         sys.exit(1)
 
     filename = os.path.basename(fichero_entrada)
-    out_path = os.path.join(carpeta_salida, f"{filename}.json")
+    out_path = os.path.join(carpeta_salida, f"{filename}.jsonl")
 
     if os.path.isfile(out_path):
         print(f"El fichero de salida ya existe: {out_path}")
