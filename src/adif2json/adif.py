@@ -3,8 +3,9 @@ import adif2json.parser as par
 
 import json
 from enum import Enum
-from typing import Iterator, Optional, Dict, List
+from typing import Any, Iterator, Optional, Dict, List
 from dataclasses import dataclass, asdict
+from functools import singledispatch
 
 
 class Reason(Enum):
@@ -154,57 +155,76 @@ def _read_fields(adif: Iterator[par.Character]) -> Iterator[Record]:
 Field_reason = Field | ParseError | SegmentError | Reason
 
 
-def _read_field(adif: Iterator[par.Character]) -> Iterator[Field_reason]:
-    def _par2reason(emit: par.EmitState) -> Field_reason:
-        if isinstance(emit, par.Value):
-            if emit.tipe:
-                field = Field(
-                    par.charlist_to_str(emit.name),
-                    par.charlist_to_str(emit.value),
-                    emit.tipe.character,
-                )
-            else:
-                field = Field(
-                    par.charlist_to_str(emit.name),
-                    par.charlist_to_str(emit.value),
-                )
-            return field
-        elif isinstance(emit, par.Eoh):
-            return Reason.EOH
-        elif isinstance(emit, par.Eor):
-            return Reason.EOR
-        elif isinstance(emit, par.IvalidLabel):
-            return ParseError(
-                Reason.INVALID_LABEL, emit.name[0].line, emit.name[0].column
-            )
-        elif isinstance(emit, par.ExceededValue):
-            return SegmentError(
-                Reason.EXCEEDENT_VALUE,
-                emit.remainder[0].line,
-                emit.remainder[0].column,
-                emit.remainder[-1].line,
-                emit.remainder[-1].column,
-            )
-        elif isinstance(emit, par.IvalidLabelSize):
-            return SegmentError(
-                Reason.INVALID_SIZE,
-                emit.size[0].line,
-                emit.size[0].column,
-                emit.size[-1].line,
-                emit.size[-1].column,
-            )
-        elif isinstance(emit, par.IvalidLabelTipe):
-            if not emit.tipe:
-                raise NotImplementedError
-            return ParseError(
-                Reason.INVALID_TIPE,
-                emit.tipe.line,
-                emit.tipe.column,
-            )
-        else:
-            print(emit)
-            raise NotImplementedError
+@singledispatch
+def _par2reason(_: Any) -> Any:
+    raise NotImplementedError
 
+
+@_par2reason.register
+def _(emit: par.Value) -> Field_reason:
+    if emit.tipe:
+        field = Field(
+            par.charlist_to_str(emit.name),
+            par.charlist_to_str(emit.value),
+            emit.tipe.character,
+        )
+    else:
+        field = Field(
+            par.charlist_to_str(emit.name),
+            par.charlist_to_str(emit.value),
+        )
+    return field
+
+
+@_par2reason.register
+def _(_: par.Eoh) -> Field_reason:
+    return Reason.EOH
+
+
+@_par2reason.register
+def _(_: par.Eor) -> Field_reason:
+    return Reason.EOR
+
+
+@_par2reason.register
+def _(emit: par.IvalidLabel) -> Field_reason:
+    return ParseError(Reason.INVALID_LABEL, emit.name[0].line, emit.name[0].column)
+
+
+@_par2reason.register
+def _(emit: par.ExceededValue) -> Field_reason:
+    return SegmentError(
+        Reason.EXCEEDENT_VALUE,
+        emit.remainder[0].line,
+        emit.remainder[0].column,
+        emit.remainder[-1].line,
+        emit.remainder[-1].column,
+    )
+
+
+@_par2reason.register
+def _(emit: par.IvalidLabelSize) -> Field_reason:
+    return SegmentError(
+        Reason.INVALID_SIZE,
+        emit.size[0].line,
+        emit.size[0].column,
+        emit.size[-1].line,
+        emit.size[-1].column,
+    )
+
+
+@_par2reason.register
+def _(emit: par.IvalidLabelTipe) -> Field_reason:
+    if not emit.tipe:
+        raise Exception("Invalid type emit")
+    return ParseError(
+        Reason.INVALID_TIPE,
+        emit.tipe.line,
+        emit.tipe.column,
+    )
+
+
+def _read_field(adif: Iterator[par.Character]) -> Iterator[Field_reason]:
     last_line = 0
     last_column = 0
     state = par.State()

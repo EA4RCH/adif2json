@@ -1,28 +1,39 @@
 import sys
 import os
+import chardet
+
+import aiofiles
+import asyncio
 
 from adif2json.adif import to_json_lines
 
 
-def archivo_streaming(nombre_archivo, tamano_bloque=1024):
-    resto = b""
-    with open(nombre_archivo, "rb") as f:
-        while True:
-            bloque = resto + f.read(tamano_bloque)
-            if not bloque:
-                break
-            try:
-                u = bloque.decode("utf-8")
-            except UnicodeDecodeError as e:
-                resto = bloque[e.start :]
-                bloque = bloque[: e.start]
-                continue
-            else:
-                resto = b""
-            for c in u:
-                yield c
-            if resto:
-                yield resto.decode("utf-8", "ignore")
+async def read_adif(nombre_archivo):
+    async with aiofiles.open(nombre_archivo, "rb") as f:
+        adif = await f.read()
+        result = chardet.detect(adif)
+        if result["confidence"] < 0.9:
+            print(f"Confidence of encoding detection is low: {result['confidence']}")
+            print(
+                f"Please check the file: {nombre_archivo} and provide the correct encoding."
+            )
+            print(f"Encoding: {result['encoding']}")
+            print("trying to continue...")
+        if not result["encoding"]:
+            print(
+                f"Please check the file: {nombre_archivo} and provide the correct encoding."
+            )
+            exit(1)
+        adif = adif.decode(result["encoding"])
+        return adif
+
+
+async def write_json_lines(in_file, out_path):
+    async with aiofiles.open(out_path, "w") as out_file:
+        adif = await read_adif(in_file)
+        out = to_json_lines(adif)
+        for l in out:
+            await out_file.write(l)
 
 
 def adif2json():
@@ -47,8 +58,4 @@ def adif2json():
         print(f"El fichero de salida ya existe: {out_path}")
         sys.exit(1)
 
-    with open(out_path, "w") as out_file:
-        adif = archivo_streaming(fichero_entrada)
-        out = to_json_lines(adif)
-        for l in out:
-            out_file.write(l)
+    asyncio.run(write_json_lines(fichero_entrada, out_path))
