@@ -235,24 +235,16 @@ def _(emit: par.TruncatedValue) -> Field_reason:
 
 
 def _read_field(adif: Iterator[par.Character]) -> Iterator[Field_reason]:
-    last_line = 0
-    last_column = 0
     state = par.State()
-    record_open = False
-    for s in adif:
-        state, emit = par.state_machine(state, s)
+    for emit in par.state_machine(state, adif):
         if emit is not None:
-            em = _par2reason(emit)
-            if isinstance(em, Field):
-                record_open = True
-            elif em == Reason.EOR:
-                record_open = False
-            elif em == Reason.EOH:
-                record_open = False
-            yield em
-        last_line = s.line
-        last_column = s.column
+            yield _par2reason(emit)
+        # TODO: last line and column
+        # last_line = s.line
+        # last_column = s.column
 
+    """
+    TODO: fix this
     state, emit = par.state_machine(
         state, par.Character(" ", last_line, last_column + 1)
     )
@@ -276,3 +268,4 @@ def _read_field(adif: Iterator[par.Character]) -> Iterator[Field_reason]:
             last_line,
             last_column,
         )
+    """

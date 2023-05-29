@@ -1,6 +1,6 @@
 from typing import Any, Iterator, List, Optional, Tuple
 from dataclasses import dataclass
-from functools import singledispatch
+from itertools import dropwhile, takewhile
 
 
 @dataclass
@@ -219,22 +219,36 @@ class Eor(EmitState):
     pass
 
 
-def _state(st: State, c: Character) -> Tuple[State | Name, Optional[EmitState]]:
+def _state(st: State, c: Iterator[Character]) -> Iterator[Name | EmitState]:
     """
     The fundamental state is discarding characters until we find a
     character <.
     """
-    if c.character == "<":
-        return Name([]), None
-    return st, None
+    yield Name([])
 
 
-def _name(st: Name, c: Character) -> Tuple[Size | Name | State, Optional[EmitState]]:
+def _name(st: Name, c: Iterator[Character]) -> Size | State | EmitState:
     """
     Reading the name, will accumulate chars until we find a >
     or a :.
     """
-    if c.character == ">":
+
+    def _end_part(x: Character) -> bool:
+        if x.character == ">":
+            return True
+        elif x.character == ":":
+            return True
+        return False
+
+    try:
+        current = next(c)
+    except StopIteration:
+        return
+    if current == "<":
+        name = list(takewhile(_end_part, c))
+        size = list(takewhile(_end_part, c))
+        tipe = list(takewhile(_end_part, c))
+
         if is_char_seq_equals(map(lambda x: x.character.upper(), st.name), "EOH"):
             return State(), Eoh()
         elif is_char_seq_equals(map(lambda x: x.character.upper(), st.name), "EOR"):
@@ -344,14 +358,73 @@ DISPATCHERS = {
 }
 
 
-def state_machine(state: Any, char: Iterator[Character]) -> Tuple[Any, Any]:
+def state_machine(char: Iterator[Character]) -> Tuple[Any, Any]:
     """
     TODO: state reading must be stiky. The machine must read
     until find their end state.
     Is better to yield instear or return, so we can emit several
     things as needed ???
     """
-    try:
-        return DISPATCHERS[type(state)](state, char)
-    except KeyError:
-        raise NotImplementedError
+    raise NotImplementedError
+
+
+def parse_fields(c: Iterator[Character]) -> Iterator[str | EmitState]:
+    def _open_tag(x: Character) -> bool:
+        return x.character == "<"
+
+    def _close_tag(x: Character) -> bool:
+        return x.character == ">"
+
+    def _split(xs: List[Character], s: str) -> Tuple[int, List[List[Character]]]:
+        res = [[]]
+        i = 0
+        for x in xs:
+            if x.character == s:
+                res.append([])
+                i += 1
+            else:
+                res[i].append(x)
+        return len(res), res
+
+    while True:
+        ok = next(dropwhile(lambda x: not _open_tag(x), c), None)
+        if ok is None:
+            return
+        label = list(takewhile(lambda x: not _close_tag(x), c))
+        n_parts, parts = _split(label, ":")
+        tipe = None
+        size = None
+        size_int = 0
+        if n_parts == 1:
+            name = charlist_to_str(parts[0])
+            if name.upper() == "EOH":
+                yield Eoh()
+            elif name.upper() == "EOR":
+                yield Eor()
+            else:
+                yield IvalidLabelSize(parts[0])
+            continue
+        if n_parts > 1:
+            name = charlist_to_str(parts[0])
+            size = parts[1]
+            try:
+                size_int = int(charlist_to_str(size))
+            except ValueError:
+                yield IvalidLabelSize(size)
+                continue
+        if n_parts > 2:
+            tipe = parts[2]
+
+        remainder = list(takewhile(lambda x: not _open_tag(x), c))
+        current_remainder = charlist_to_str(remainder).strip()
+        if size_int < len(current_remainder):
+            yield ExceededValue(remainder)
+            continue
+        elif size_int > len(current_remainder):
+            yield TruncatedValue(remainder)
+            continue
+        value = current_remainder[:size_int]
+
+        yield name
+        yield tipe
+        yield value
