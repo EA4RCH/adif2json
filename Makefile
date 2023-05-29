@@ -1,4 +1,4 @@
-.PHONY = test coverage clean
+.PHONY = test coverage clean profile
 
 all: coverage
 	echo "Done"
@@ -13,3 +13,8 @@ test:
 
 coverage: clean test
 	pytest --cov=adif2json --cov-report=html tests/
+
+profile:
+	rm -f out/log4om*
+	python -m cProfile -o single.prof $$(which adif2json) examples/log4om.adi out/
+	snakeviz single.prof

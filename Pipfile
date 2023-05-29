@@ -16,6 +16,7 @@ pylint = "*"
 pyslp = "*"
 pyls = "*"
 debugpy = "*"
+snakeviz = "*"
 
 [requires]
 python_version = "3.11"

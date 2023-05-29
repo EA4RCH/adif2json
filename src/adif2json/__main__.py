@@ -2,15 +2,13 @@ import sys
 import os
 import chardet
 
-import aiofiles
-import asyncio
-
 from adif2json.adif import to_json_lines
 
 
-async def read_adif(nombre_archivo):
-    async with aiofiles.open(nombre_archivo, "rb") as f:
-        adif = await f.read()
+def read_adif(nombre_archivo):
+    # TODO: filemagic
+    with open(nombre_archivo, "rb") as f:
+        adif = f.read()
         result = chardet.detect(adif)
         if result["confidence"] < 0.9:
             print(f"Confidence of encoding detection is low: {result['confidence']}")
@@ -28,28 +26,28 @@ async def read_adif(nombre_archivo):
         return adif
 
 
-async def read_adif_lines(nombre_archivo):
-    async with aiofiles.open(nombre_archivo, "r") as f:
-        async for line in f:
+def read_adif_lines(nombre_archivo):
+    with open(nombre_archivo, "r") as f:
+        for line in f:
             yield line
 
 
-async def write_json_lines(in_file, out_path):
-    async with aiofiles.open(out_path, "w") as out_file:
+def write_json_lines(in_file, out_path):
+    with open(out_path, "w") as out_file:
         try:
-            async for l in read_adif_lines(in_file):
+            for l in read_adif_lines(in_file):
                 out = to_json_lines(l)
                 for l in out:
-                    await out_file.write(l)
+                    out_file.write(l)
             return
         except UnicodeDecodeError as e:
             print(f"Error decoding line: {e}")
     # fallback
-    async with aiofiles.open(out_path, "w") as out_file:
-        ad = await read_adif(in_file)
+    with open(out_path, "w") as out_file:
+        ad = read_adif(in_file)
         out = to_json_lines(ad)
         for l in out:
-            await out_file.write(l)
+            out_file.write(l)
 
 
 def adif2json():
@@ -74,4 +72,4 @@ def adif2json():
         print(f"El fichero de salida ya existe: {out_path}")
         sys.exit(1)
 
-    asyncio.run(write_json_lines(fichero_entrada, out_path))
+    write_json_lines(fichero_entrada, out_path)

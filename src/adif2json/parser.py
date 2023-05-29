@@ -219,13 +219,7 @@ class Eor(EmitState):
     pass
 
 
-@singledispatch
-def state_machine(_: Any, __: Any) -> Any:
-    raise NotImplementedError
-
-
-@state_machine.register
-def _(st: State, c: Character) -> Tuple[State | Name, Optional[EmitState]]:
+def _state(st: State, c: Character) -> Tuple[State | Name, Optional[EmitState]]:
     """
     The fundamental state is discarding characters until we find a
     character <.
@@ -235,8 +229,7 @@ def _(st: State, c: Character) -> Tuple[State | Name, Optional[EmitState]]:
     return st, None
 
 
-@state_machine.register
-def _(st: Name, c: Character) -> Tuple[Size | Name | State, Optional[EmitState]]:
+def _name(st: Name, c: Character) -> Tuple[Size | Name | State, Optional[EmitState]]:
     """
     Reading the name, will accumulate chars until we find a >
     or a :.
@@ -257,8 +250,7 @@ def _(st: Name, c: Character) -> Tuple[Size | Name | State, Optional[EmitState]]
     return st, None
 
 
-@state_machine.register
-def _(
+def _size(
     st: Size, c: Character
 ) -> Tuple[Size | Tipe | Value | State, Optional[EmitState]]:
     """
@@ -278,8 +270,7 @@ def _(
     return st, None
 
 
-@state_machine.register
-def _(st: Tipe, c: Character) -> Tuple[Tipe | Value | State, Optional[EmitState]]:
+def _tipe(st: Tipe, c: Character) -> Tuple[Tipe | Value | State, Optional[EmitState]]:
     """
     Tipe is a one character string. Represent the type of the value.
     if we find a no numerical value (a-z) then will return an
@@ -299,8 +290,9 @@ def _(st: Tipe, c: Character) -> Tuple[Tipe | Value | State, Optional[EmitState]
     return State(), IvalidLabelTipe(c)
 
 
-@state_machine.register
-def _(st: Value, c: Character) -> Tuple[Value | Name | Remainder, Optional[EmitState]]:
+def _value(
+    st: Value, c: Character
+) -> Tuple[Value | Name | Remainder, Optional[EmitState]]:
     """
     Will read the value until size is reached.
     if we find a < and size is greater than 0 then will return a
@@ -320,8 +312,7 @@ def _(st: Value, c: Character) -> Tuple[Value | Name | Remainder, Optional[EmitS
     return st, None
 
 
-@state_machine.register
-def _(
+def _remainder(
     st: Remainder, c: Character
 ) -> Tuple[Remainder | Name | ExceededValue, Optional[EmitState]]:
     """
@@ -341,3 +332,26 @@ def _(
             st.remainder = []
         st.remainder.append(c)
     return st, None
+
+
+DISPATCHERS = {
+    Name: _name,
+    Size: _size,
+    Value: _value,
+    Remainder: _remainder,
+    State: _state,
+    Tipe: _tipe,
+}
+
+
+def state_machine(state: Any, char: Iterator[Character]) -> Tuple[Any, Any]:
+    """
+    TODO: state reading must be stiky. The machine must read
+    until find their end state.
+    Is better to yield instear or return, so we can emit several
+    things as needed ???
+    """
+    try:
+        return DISPATCHERS[type(state)](state, char)
+    except KeyError:
+        raise NotImplementedError
