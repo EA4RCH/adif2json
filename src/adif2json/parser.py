@@ -1,6 +1,6 @@
 from typing import Any, Iterator, List, Optional, Tuple
 from dataclasses import dataclass
-from itertools import dropwhile, takewhile
+from itertools import dropwhile, takewhile, tee
 
 
 @dataclass
@@ -368,14 +368,23 @@ def state_machine(char: Iterator[Character]) -> Tuple[Any, Any]:
     raise NotImplementedError
 
 
-def parse_fields(c: Iterator[Character]) -> Iterator[str | EmitState]:
+@dataclass
+class Field:
+    name: str
+    value: str
+    tipe: Optional[str] = None
+
+
+def parse_fields(c: Iterator[Character]) -> Iterator[Field | EmitState]:
     def _open_tag(x: Character) -> bool:
         return x.character == "<"
 
     def _close_tag(x: Character) -> bool:
         return x.character == ">"
 
-    def _split(xs: List[Character], s: str) -> Tuple[int, List[List[Character]]]:
+    def _split(
+            xs: List[Character], s: str
+    ) -> Tuple[int, List[List[Character]]]:
         res = [[]]
         i = 0
         for x in xs:
@@ -386,11 +395,13 @@ def parse_fields(c: Iterator[Character]) -> Iterator[str | EmitState]:
                 res[i].append(x)
         return len(res), res
 
+    ok = next(dropwhile(lambda x: not _open_tag(x), c), None)
+    if ok is None:
+        return
     while True:
-        ok = next(dropwhile(lambda x: not _open_tag(x), c), None)
-        if ok is None:
-            return
         label = list(takewhile(lambda x: not _close_tag(x), c))
+        if not label:
+            return
         n_parts, parts = _split(label, ":")
         tipe = None
         size = None
@@ -403,6 +414,9 @@ def parse_fields(c: Iterator[Character]) -> Iterator[str | EmitState]:
                 yield Eor()
             else:
                 yield IvalidLabelSize(parts[0])
+            ok = next(dropwhile(lambda x: not _open_tag(x), c), None)
+            if ok is None:
+                return
             continue
         if n_parts > 1:
             name = charlist_to_str(parts[0])
@@ -411,6 +425,9 @@ def parse_fields(c: Iterator[Character]) -> Iterator[str | EmitState]:
                 size_int = int(charlist_to_str(size))
             except ValueError:
                 yield IvalidLabelSize(size)
+                ok = next(dropwhile(lambda x: not _open_tag(x), c), None)
+                if ok is None:
+                    return
                 continue
         if n_parts > 2:
             tipe = parts[2]
@@ -419,12 +436,16 @@ def parse_fields(c: Iterator[Character]) -> Iterator[str | EmitState]:
         current_remainder = charlist_to_str(remainder).strip()
         if size_int < len(current_remainder):
             yield ExceededValue(remainder)
+            ok = next(dropwhile(lambda x: not _open_tag(x), c), None)
+            if ok is None:
+                return
             continue
         elif size_int > len(current_remainder):
             yield TruncatedValue(remainder)
+            ok = next(dropwhile(lambda x: not _open_tag(x), c), None)
+            if ok is None:
+                return
             continue
         value = current_remainder[:size_int]
 
-        yield name
-        yield tipe
-        yield value
+        yield Field(name, value, tipe)
