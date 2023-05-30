@@ -82,9 +82,11 @@ def parse_fields(c: Iterator[Character]) -> Iterator[Field | ParseError | Eor | 
     if ok is None:
         return
     while True:
+        valid = True
         label = list(takewhile(lambda x: not _close_tag(x), c))
         if not label:
             return
+
         n_parts, parts = _split(label, ":")
         tipe = None
         size = None
@@ -93,10 +95,8 @@ def parse_fields(c: Iterator[Character]) -> Iterator[Field | ParseError | Eor | 
         name = charlist_to_str(parts[0])
         if len(name) == 0:
             yield ParseError("Empty label", label)
-            ok = next(dropwhile(lambda x: not _open_tag(x), c), None)
-            if ok is None:
-                return
-            continue
+            valid = False
+
         if n_parts == 1:
             if name.upper() == "EOH":
                 yield Eoh()
@@ -104,37 +104,34 @@ def parse_fields(c: Iterator[Character]) -> Iterator[Field | ParseError | Eor | 
                 yield Eor()
             else:
                 yield ParseError("Expect size", parts[0])
-            ok = next(dropwhile(lambda x: not _open_tag(x), c), None)
-            if ok is None:
-                return
-            continue
+            valid = False
+
         if n_parts > 1:
             size = parts[1]
             try:
                 size_int = int(charlist_to_str(size))
             except ValueError:
                 yield ParseError("Size must be a non decimal number", size)
-                ok = next(dropwhile(lambda x: not _open_tag(x), c), None)
-                if ok is None:
-                    return
-                continue
+                valid = False
+
         if n_parts > 2:
             tipe = parts[2]
             if len(tipe) > 1 or not tipe[0].character.isalpha():
                 yield ParseError("Type must be one Character", tipe)
-                ok = next(dropwhile(lambda x: not _open_tag(x), c), None)
-                if ok is None:
-                    return
-                continue
+                valid = False
             tipe = charlist_to_str(tipe)
 
-        remainder = list(takewhile(lambda x: not _open_tag(x), c))
-        current_remainder = charlist_to_str(remainder).strip()
-        value = current_remainder[:size_int]
-        if size_int < len(current_remainder):
-            yield ParseError("Excedeent value", remainder[size_int:])
-        elif size_int > len(current_remainder):
-            yield ParseError("Size is bigger than value", remainder)
-            continue
-
-        yield Field(name, value, tipe)
+        if valid:
+            remainder = list(takewhile(lambda x: not _open_tag(x), c))
+            current_remainder = charlist_to_str(remainder).strip()
+            value = current_remainder[:size_int]
+            if size_int < len(current_remainder):
+                yield ParseError("Excedeent value", remainder[size_int:])
+            elif size_int > len(current_remainder):
+                yield ParseError("Size is bigger than value", remainder)
+                continue
+            yield Field(name, value, tipe)
+        else:
+            ok = next(dropwhile(lambda x: not _open_tag(x), c), None)
+            if ok is None:
+                return

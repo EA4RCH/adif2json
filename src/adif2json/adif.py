@@ -7,67 +7,12 @@ from typing import Iterator, Optional, Dict, List
 from dataclasses import dataclass, asdict
 
 
-class Reason(Enum):
-    EOF = 1
-    EOH = 2
-    EOR = 3
-    INVALID_LABEL = 4
-    INVALID_SIZE = 5
-    INVALID_TIPE = 6
-    INVALID_VALUE = 7
-    EXCEEDENT_VALUE = 8
-    TRUNCATED_FILE = 9
-
-    @classmethod
-    def tostring(cls, val):
-        for k, v in vars(cls).iteritems():
-            if v == val:
-                return k
-
-
-@dataclass
-class ParseError:
-    reason: Reason
-    line: int
-    column: int
-
-
-@dataclass
-class SegmentError:
-    reason: Reason
-    start_line: int
-    start_column: int
-    end_line: int
-    end_column: int
-
-
-@dataclass
-class Label:
-    label: str
-    size: Optional[int] = None
-    tipe: Optional[str] = None
-
-
-@dataclass
-class Field:
-    label: str
-    value: str
-    tipe: Optional[str] = None
-
-
 @dataclass
 class Record:
     fields: Dict[str, str]
     type: Optional[str] = None
     types: Optional[Dict[str, str]] = None
     errors: Optional[List[Dict[str, str]]] = None
-
-
-@dataclass
-class Adif:
-    headers: Optional[Record] = None
-    qsos: Optional[List[Record]] = None
-    errors: Optional[List[ParseError | SegmentError]] = None
 
 
 def to_json_lines(adif: Iterator[str] | str) -> Iterator[str]:

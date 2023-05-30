@@ -19,7 +19,9 @@ def test_empty():
 def test_simple_qso():
     adif = "<call:6>EA4HFF<EOR>"
     js = "".join(to_json_lines(adif))
+    print(js)
     res = to_adif(js).strip()
+    print(res)
 
     assert res == adif
 
