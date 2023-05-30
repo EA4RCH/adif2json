@@ -1,75 +1,68 @@
 import sys
 import os
+import argparse
 import chardet
 
 from adif2json.adif import to_json_lines
 
 
-def read_adif(nombre_archivo):
-    # TODO: filemagic
-    with open(nombre_archivo, "rb") as f:
-        adif = f.read()
-        result = chardet.detect(adif)
-        if result["confidence"] < 0.9:
-            print(f"Confidence of encoding detection is low: {result['confidence']}")
-            print(
-                f"Please check the file: {nombre_archivo} and provide the correct encoding."
-            )
-            print(f"Encoding: {result['encoding']}")
-            print("trying to continue...")
-        if not result["encoding"]:
-            print(
-                f"Please check the file: {nombre_archivo} and provide the correct encoding."
-            )
-            exit(1)
-        adif = adif.decode(result["encoding"])
-        return adif
+# TODO: filemagic?
+def get_encoding(file_path):
+    with open(file_path, "rb") as f:
+        rawdata = f.read()
+    return chardet.detect(rawdata)["encoding"]
 
 
-def read_adif_lines(nombre_archivo):
-    with open(nombre_archivo, "r") as f:
-        for line in f:
-            yield line
+def read_adif_lines(nombre_archivo, encoding):
+    with open(nombre_archivo, "r", encoding=encoding) as f:
+        return f.readlines()
 
 
-def write_json_lines(in_file, out_path):
+def write_json_lines(in_file, out_path, encoding):
     with open(out_path, "w") as out_file:
         try:
-            for l in read_adif_lines(in_file):
-                out = to_json_lines(l)
-                for l in out:
-                    out_file.write(l)
+            for lines in read_adif_lines(in_file, encoding):
+                out = to_json_lines(lines)
+                for jsline in out:
+                    out_file.write(jsline)
             return
         except UnicodeDecodeError as e:
             print(f"Error decoding line: {e}")
-    # fallback
-    with open(out_path, "w") as out_file:
-        ad = read_adif(in_file)
-        out = to_json_lines(ad)
-        for l in out:
-            out_file.write(l)
+            print(f"Maybe you should try with encoding: {get_encoding(in_file)}")
+            print("Please provide correct encoding")
 
 
 def adif2json():
-    if len(sys.argv) != 3:
-        print("Uso: adif2json <fichero_entrada> <carpeta_salida>")
-        sys.exit(1)
+    # Crear el analizador de argumentos
+    parser = argparse.ArgumentParser(description='ADIF to JSONL converter')
 
-    fichero_entrada, carpeta_salida = sys.argv[1], sys.argv[2]
+    # Añadir el argumento opcional para encoding con valor por defecto 'utf-8'
+    parser.add_argument('--encoding', type=str, default='utf-8',
+                        help='El encoding del archivo')
 
-    if not os.path.isfile(fichero_entrada):
-        print(f"No se encuentra el fichero de entrada: {fichero_entrada}")
-        sys.exit(1)
+    parser.add_argument('file_path', type=str,
+                        help='La ruta del archivo a procesar')
 
-    if not os.path.isdir(carpeta_salida):
-        print(f"No se encuentra la carpeta de salida: {carpeta_salida}")
-        sys.exit(1)
+    parser.add_argument('folder_path', type=str,
+                        help='La ruta de la carpeta de destino')
 
-    filename = os.path.basename(fichero_entrada)
-    out_path = os.path.join(carpeta_salida, f"{filename}.jsonl")
+    # Analizar los argumentos
+    args = parser.parse_args()
+
+    # Comprobar si los archivos y carpetas existen
+    if not os.path.isfile(args.file_path):
+        print(f"El archivo {args.file_path} no existe")
+        return
+
+    if not os.path.isdir(args.folder_path):
+        print(f"La carpeta {args.folder_path} no existe")
+        return
+
+    filename = os.path.basename(args.file_path)
+    out_path = os.path.join(args.folder_path, f"{filename}.jsonl")
 
     if os.path.isfile(out_path):
         print(f"El fichero de salida ya existe: {out_path}")
         sys.exit(1)
 
-    write_json_lines(fichero_entrada, out_path)
+    write_json_lines(args.file_path, out_path, args.encoding)

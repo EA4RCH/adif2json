@@ -4,9 +4,9 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-adif2json = {editable = true, path = "."}
 aiofiles = "*"
 chardet = "*"
+adif2json = {editable = true, path = "."}
 
 [dev-packages]
 pytest = "*"

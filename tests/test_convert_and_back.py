@@ -10,7 +10,8 @@ def _string_similar(s1, s2):
 
 def test_empty():
     adif = ""
-    js = "".join(to_json(adif))
+    res_js = list(to_json_lines(adif))
+    js = "".join(res_js)
     res = to_adif(js)
 
     assert res == adif
