@@ -81,5 +81,5 @@ def adif2json():
         logging.error(f"El fichero de salida ya existe: {out_path}")
         sys.exit(1)
 
-    logging.info(f"Converting {args.file_path} to {out_path} with encoding {args.encoding}")
+    logging.info(f"Converting {args.file_path} to {out_path}")
     write_json_lines(args.file_path, out_path, args.encoding)

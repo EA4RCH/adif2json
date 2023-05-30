@@ -1,5 +1,4 @@
 import logging
-from functools import reduce
 from typing import List, Optional, Tuple
 from dataclasses import dataclass
 
