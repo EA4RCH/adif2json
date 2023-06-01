@@ -31,63 +31,91 @@ def to_json(adif: str) -> str:
 
 
 @dataclass
+class Fields:
+    fields: Dict[str, str]
+    types: Dict[str, str]
+    errors: List[Dict[str, str]]
+
+
+@dataclass
 class Record:
     fields: Dict[str, str]
     type: str = "qso"
     types: Optional[Dict[str, str]] = None
     errors: Optional[List[Dict[str, str]]] = None
-    open: bool = True
+
+
+Parsed = par.Field | par.FormatError | par.Eoh | par.Eor
+
+
+def __merge(record: Fields, parsed: Parsed) -> Fields | Record:
+    if isinstance(parsed, par.Field):
+        if parsed.name in record.fields:
+            logging.warning(f"Duplicate field {parsed.name}")
+            error = par.FormatError("Duplicate field maybe eor missing", parsed.name)
+            if not record.errors:
+                record.errors = []
+            record.errors.append(asdict(error))
+        else:
+            record.fields[parsed.name] = parsed.value
+            if parsed.tipe:
+                if not record.types:
+                    record.types = {}
+                record.types[parsed.name] = parsed.tipe
+        return record
+    elif isinstance(parsed, par.FormatError):
+        if not record.errors:
+            record.errors = []
+        record.errors.append(asdict(parsed))
+        return record
+    elif isinstance(parsed, par.Eoh):
+        if record.errors:
+            return Record(record.fields, "headers", record.types, record.errors)
+        else:
+            return Record(record.fields, "headers", record.types)
+    elif isinstance(parsed, par.Eor):
+        if record.errors:
+            return Record(record.fields, "qso", record.types, record.errors)
+        else:
+            return Record(record.fields, "qso", record.types)
 
 
 def __create_records(
-    acc: List[Record], field: par.Field | par.FormatError | par.Eoh | par.Eor
-) -> List[Record]:
+    acc: List[Record | Fields], field: Parsed
+) -> List[Record | Fields]:
     if acc == []:
-        acc = [Record({})]
-    rec = acc[-1]
-    if isinstance(field, par.Field):
-        # TODO: Check if we are overwriting a field
-        # maybe there is no eor
-        rec.fields[field.name] = field.value
-        if field.tipe:
-            if not rec.types:
-                rec.types = {}
-            rec.types[field.name] = field.tipe
-    elif isinstance(field, par.FormatError):
-        if not rec.errors:
-            rec.errors = []
-        rec.errors.append(asdict(field))
-    elif isinstance(field, par.Eoh):
-        rec.type = "headers"
-        acc.append(Record({}))
-    elif isinstance(field, par.Eor):
-        rec.open = False
-        acc.append(Record({}))
-
+        acc = [Fields({}, {}, [])]
+    if isinstance(acc[-1], Record):
+        acc.append(Fields({}, {}, []))
+    acc[-1] = __merge(acc[-1], field)
     return acc
 
 
 def to_dict(adif: str) -> List[Dict]:
     def _to_dict(record: Record) -> Dict:
-        d = asdict(record)
-        del d["open"]
-        return d
+        return {
+            "type": record.type,
+            "fields": record.fields,
+            "types": record.types,
+            "errors": record.errors,
+        }
 
     logging.info(f"Converting {len(adif)} characters to List dict")
     fields = par.parse_all(adif)
     logging.info(f"Readed {len(fields)} fields from ADIF")
 
-    records = list(reduce(__create_records, fields, [Record({})]))
+    records = list(reduce(__create_records, fields, []))
     logging.info(f"Created {len(records)} records from ADIF")
 
     if len(records) > 0:
-        if records[-1].fields == {} and records[-1].errors is None:
-            logging.warning("Empty last Record")
-            records = records[:-1]
-        elif records[-1].open:
+        if isinstance(records[-1], Fields):
             logging.error("Truncated Record")
+            rec = Record(records[-1].fields, "qso", records[-1].types)
+            if records[-1].errors:
+                rec.errors = records[-1].errors
+            else:
+                rec.errors = []
             error = par.FormatError("Truncated Record", "")
-            if not records[-1].errors:
-                records[-1].errors = []
-            records[-1].errors.append(asdict(error))
+            rec.errors.append(asdict(error))
+            records[-1] = rec
     return list(map(_to_dict, records))

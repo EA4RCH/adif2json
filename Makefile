@@ -16,5 +16,5 @@ coverage: clean test
 
 profile:
 	rm -f out/log4om*
-	python -m cProfile -o profiling/direct.prof $$(which adif2json) examples/log4om.adi out/
-	snakeviz profiling/direct.prof
+	python -m cProfile -o profiling/monoid.prof $$(which adif2json) examples/log4om.adi out/
+	snakeviz profiling/monoid.prof
