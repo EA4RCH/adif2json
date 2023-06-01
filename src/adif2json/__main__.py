@@ -27,7 +27,7 @@ def read_adif(nombre_archivo, encoding):
 
 
 def write_json_lines(in_file, out_path, encoding):
-    with open(out_path, "w") as out_file:
+    with open(out_path, "w", encoding="utf-8") as out_file:
         try:
             adif = read_adif(in_file, encoding)
             logging.info(f"Readed {len(adif)} characters from {in_file}")
@@ -42,20 +42,20 @@ def write_json_lines(in_file, out_path, encoding):
 
 def adif2json():
     # Crear el analizador de argumentos
-    parser = argparse.ArgumentParser(description='ADIF to JSONL converter')
+    parser = argparse.ArgumentParser(description="ADIF to JSONL converter")
 
     # Añadir el argumento opcional para encoding con valor por defecto 'utf-8'
-    parser.add_argument('--encoding', type=str, default='utf-8',
-                        help='El encoding del archivo')
+    parser.add_argument(
+        "--encoding", type=str, default="utf-8", help="El encoding del archivo"
+    )
 
-    parser.add_argument('-v', '--verbose', action='store_true',
-                        help='Activa los logs')
+    parser.add_argument("-v", "--verbose", action="store_true", help="Activa los logs")
 
-    parser.add_argument('file_path', type=str,
-                        help='La ruta del archivo a procesar')
+    parser.add_argument("file_path", type=str, help="La ruta del archivo a procesar")
 
-    parser.add_argument('folder_path', type=str,
-                        help='La ruta de la carpeta de destino')
+    parser.add_argument(
+        "folder_path", type=str, help="La ruta de la carpeta de destino"
+    )
 
     # Analizar los argumentos
     args = parser.parse_args()
