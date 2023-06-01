@@ -86,7 +86,7 @@ def to_dict(adif: str) -> List[Dict]:
             records = records[:-1]
         elif records[-1].open:
             logging.error("Truncated Record")
-            error = par.ParseError("Truncated Record", [])
+            error = par.FormatError("Truncated Record", "")
             if not records[-1].errors:
                 records[-1].errors = []
             records[-1].errors.append(asdict(error))
