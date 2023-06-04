@@ -26,11 +26,17 @@ def read_adif(nombre_archivo, encoding):
         return f.read()
 
 
+def read_adif_lines(nombre_archivo, encoding):
+    with open(nombre_archivo, "r", encoding=encoding) as f:
+        logging.info(f"Reading file {nombre_archivo} with encoding {encoding}")
+        for line in f.readlines():
+            yield line
+
+
 def write_json_lines(in_file, out_path, encoding):
     with open(out_path, "w", encoding="utf-8") as out_file:
         try:
-            adif = read_adif(in_file, encoding)
-            logging.info(f"Readed {len(adif)} characters from {in_file}")
+            adif = read_adif_lines(in_file, encoding)
             out = to_json_lines(adif)
             lines = 0
             logging.debug(f"Writing to {out_path}")

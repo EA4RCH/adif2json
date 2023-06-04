@@ -129,10 +129,10 @@ def _read_field(
     yield Field(name, value, tipe)
 
 
-def parse_all(s: str) -> Iterable[Field | FormatError | Eor | Eoh]:
+def parse_all(s: Iterable[str]) -> Iterable[Field | FormatError | Eor | Eoh]:
     if s == "":
         return
-    tags = _iter_finder(s)
+    tags = _iter_finder_stream(s)
     delim = map(__unpack(_parse_delimiters), tags)
     labeled = map(__unpack(_parse_label), delim)
     records = map(__unpack(_read_field), labeled)

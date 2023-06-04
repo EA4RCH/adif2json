@@ -7,14 +7,13 @@ from typing import Iterable, Optional, Dict, List
 from dataclasses import dataclass, asdict
 
 
-def to_json_lines(adif: str) -> Iterable[str]:
+def to_json_lines(adif: Iterable[str]) -> Iterable[str]:
     def _to_jsonline(d: Dict[str, str]) -> str:
         return f"{json.dumps(d)}\n"
 
     if adif == "":
         logging.warning("Empty ADIF")
         return ""
-    logging.info(f"Converting {len(adif)} characters to dicts")
     dicts = to_dict(adif)
     logging.info("Converted to dicts")
     logging.info("Converting to JSON lines")
@@ -124,7 +123,7 @@ def _to_dict(record: Record) -> Dict:
     }
 
 
-def to_dict(adif: str) -> Iterable[Dict]:
+def to_dict(adif: Iterable[str]) -> Iterable[Dict]:
     if adif == "":
         logging.warning("Empty ADIF")
         return
