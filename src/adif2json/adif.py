@@ -15,8 +15,10 @@ def to_json_lines(adif: str) -> Iterable[str]:
     if adif == "":
         logging.warning("Empty ADIF")
         return ""
-    logging.info(f"Converting {len(adif)} characters to JSONL")
+    logging.info(f"Converting {len(adif)} characters to dicts")
     dicts = to_dict(adif)
+    logging.info("Converted to dicts")
+    logging.info("Converting to JSON lines")
     yield from map(_to_jsonline, dicts)
 
 

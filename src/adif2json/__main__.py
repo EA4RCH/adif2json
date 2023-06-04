@@ -32,8 +32,13 @@ def write_json_lines(in_file, out_path, encoding):
             adif = read_adif(in_file, encoding)
             logging.info(f"Readed {len(adif)} characters from {in_file}")
             out = to_json_lines(adif)
+            lines = 0
+            logging.debug(f"Writing to {out_path}")
             for l in out:
+                lines += 1
+                logging.debug(f"Writing line {lines}")
                 out_file.write(l)
+            logging.info(f"Written {lines} lines to {out_path}")
         except UnicodeDecodeError as e:
             logging.error(f"Error decoding line: {e}")
             logging.error(f"Try with encoding: {get_encoding(in_file)}")
@@ -62,7 +67,7 @@ def adif2json():
 
     logging.StreamHandler(sys.stdout)
     if args.verbose:
-        logging.getLogger().setLevel(logging.INFO)
+        logging.getLogger().setLevel(logging.DEBUG)
     else:
         logging.getLogger().setLevel(logging.ERROR)
 

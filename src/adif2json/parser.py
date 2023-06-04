@@ -37,10 +37,10 @@ class FormatError:
 
 
 def _iter_finder(s: str) -> Iterable[Tuple[str, str]]:
-    logging.debug(f"Finding fields")
+    logging.debug(f"Iter fields")
     for l in re.finditer(r"([^<]*)>([^<]*)", s):
         yield l.group(1), l.group(2)
-    logging.debug(f"Finding fields done")
+    logging.debug(f"Iter fields done")
 
 
 def _parse_delimiters(s: str, v: str) -> Tuple[str | Eor | Eoh, str]:
@@ -121,5 +121,5 @@ def parse_all(s: str) -> Iterable[Field | FormatError | Eor | Eoh]:
     delim = map(__unpack(_parse_delimiters), tags)
     labeled = map(__unpack(_parse_label), delim)
     records = map(__unpack(_read_field), labeled)
-    out = reduce(chain, records)
-    yield from out
+    for x in records:
+        yield from x
