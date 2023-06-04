@@ -48,7 +48,7 @@ class Record:
 Parsed = par.Field | par.FormatError | par.Eoh | par.Eor
 
 
-def __merge(record: Fields, parsed: Parsed) -> Fields | Record:
+def _merge(record: Fields, parsed: Parsed) -> Fields | Record:
     if not isinstance(record, Fields):
         logging.error(f"Unexpected record type {type(record)}")
         return record
@@ -89,20 +89,16 @@ def __merge(record: Fields, parsed: Parsed) -> Fields | Record:
             return Record(record.fields, "qso", record.types)
 
 
-def __create_records(
-    acc: List[Record | Fields], field: Parsed
-) -> List[Record | Fields]:
-    logging.debug(f"Field to Record: {field}")
-    if acc == []:
-        logging.debug("Creating first Fields")
-        acc = [Fields({}, {}, [])]
-    if isinstance(acc[-1], Record):
-        logging.debug("Detect Record, creating new Fields")
-        acc.append(Fields({}, {}, []))
-    if isinstance(acc[-1], Fields):
-        logging.debug("Detect Fields, merging")
-        acc[-1] = __merge(acc[-1], field)
-    return acc
+def _create_records(fields: Iterable[Parsed]) -> Iterable[Record | Fields]:
+    current = Fields({}, {}, [])
+    for field in fields:
+        logging.debug(f"Field: {field}")
+        current = _merge(current, field)
+        if isinstance(current, Record):
+            yield current
+            current = Fields({}, {}, [])
+    if current.fields or current.errors:
+        yield current
 
 
 def _check_truncated(record: Record | Fields) -> Record:
@@ -134,7 +130,7 @@ def to_dict(adif: str) -> Iterable[Dict]:
         logging.warning("Empty ADIF")
         return
     fields = par.parse_all(adif)
-    records = reduce(__create_records, fields, [])
+    records = _create_records(fields)
     not_truncated = map(_check_truncated, records)
     dict_records = map(_to_dict, not_truncated)
     yield from dict_records
