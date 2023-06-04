@@ -140,6 +140,7 @@ def test_several_qsos():
     res_l = list(to_dict(imput))
 
     res = res_l[0]
+    assert len(res_l) == 3, "Several qsos should return three records"
     assert "type" in res, "Several qsos should return type property"
     assert res["type"] == "qso", "Several qsos should return type=qso"
     assert "fields" in res, "Several qsos should return qso with fields"

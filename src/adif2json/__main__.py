@@ -32,8 +32,8 @@ def write_json_lines(in_file, out_path, encoding):
             adif = read_adif(in_file, encoding)
             logging.info(f"Readed {len(adif)} characters from {in_file}")
             out = to_json_lines(adif)
-            logging.info(f"Writing {len(out)} characters to {out_path}")
-            out_file.write(out)
+            for l in out:
+                out_file.write(l)
         except UnicodeDecodeError as e:
             logging.error(f"Error decoding line: {e}")
             logging.error(f"Try with encoding: {get_encoding(in_file)}")

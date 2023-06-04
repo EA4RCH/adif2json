@@ -1,6 +1,9 @@
+from functools import reduce
 import logging
-from typing import List, Optional, Tuple
+import re
+from typing import Iterable, List, Optional, Tuple
 from dataclasses import dataclass
+from itertools import chain
 
 
 @dataclass
@@ -33,17 +36,14 @@ class FormatError:
     part: str
 
 
-def __parse_record(s: str) -> Tuple[str, str]:
-    try:
-        lab, val = s.split(">", 1)
-        return lab, val
-    except ValueError:
-        if len(s) == 0:
-            return s, ""
-    return "", ""
+def _iter_finder(s: str) -> Iterable[Tuple[str, str]]:
+    logging.debug(f"Finding fields")
+    for l in re.finditer(r"([^<]*)>([^<]*)", s):
+        yield l.group(1), l.group(2)
+    logging.debug(f"Finding fields done")
 
 
-def __parse_delimiters(s: str, v: str) -> Tuple[str | Eor | Eoh, str]:
+def _parse_delimiters(s: str, v: str) -> Tuple[str | Eor | Eoh, str]:
     up = s.upper()
     if up == "EOH":
         return Eoh(), v
@@ -52,70 +52,74 @@ def __parse_delimiters(s: str, v: str) -> Tuple[str | Eor | Eoh, str]:
     return s, v
 
 
-def __parse_label(
+def _parse_label(
     s: str | Eor | Eoh, v: str
 ) -> Tuple[Tuple[str, int, Optional[str]] | Eor | Eoh | FormatError, str]:
     if not isinstance(s, str):
         return s, v
     parts = s.split(":")
+    logging.debug(f"Parsing label {s} parts {len(parts)}")
     name = parts[0]
     if len(name) == 0:
+        logging.error(f"Empty label {s}")
         return FormatError("Empty label", s), v
     try:
         size = int(parts[1])
     except ValueError:
+        logging.error(f"Size must be a non decimal number {s}")
         return FormatError("Size must be a non decimal number", s), v
     except IndexError:
+        logging.error(f"Expect size {s}")
         return FormatError("Expect size", s), v
     if len(parts) > 2:
         tipe = parts[2]
         if len(tipe) > 1 or not tipe[0].isalpha():
+            logging.error(f"Type must be one Character {s}")
             return FormatError("Type must be one Character", s), v
+        logging.debug(f"Type {tipe}")
     else:
         tipe = None
     return (name, size, tipe), v
 
 
-def __read_field(
-    s: Tuple[str, int, Optional[str]] | Eor | Eoh, v: str
-) -> List[Field | FormatError | Eor | Eoh]:
+def _read_field(
+    s: Tuple[str, int, Optional[str]] | FormatError | Eor | Eoh, v: str
+) -> Iterable[Field | FormatError | Eor | Eoh]:
     logging.debug(f"Reading field {s} value {v}")
     if isinstance(s, Eor) or isinstance(s, Eoh):
-        return [s]
+        yield s
+        return
     if isinstance(s, FormatError):
-        return [s]
-    out = []
+        yield s
+        return
     name, size, tipe = s
 
     if len(v) == 0:
-        return [FormatError("Empty value", repr(s))]
+        logging.error(f"Empty value {repr(s)}")
+        yield FormatError("Empty value", repr(s))
+        return
     elif len(v) < size:
         size = len(v)
-        out.append(FormatError("Truncated value", v))
+        logging.error(f"Truncated value {v}")
+        logging.debug(f"Resize field to available info {v}")
+        yield FormatError("Truncated value", v)
     elif len(v) > size:
         remainder = v[size:]
         if len(remainder.strip()) > 0:
-            out.append(FormatError("Exeedent value", remainder))
+            logging.error(f"Exeedent value {remainder}")
+            yield FormatError("Exeedent value", remainder)
 
     value = v[:size]
-    out.append(Field(name, value, tipe))
-    return out
+    logging.debug(f"Field {name} value {value}")
+    yield Field(name, value, tipe)
 
 
-def __reduce(acc, x):
-    return acc + x
-
-
-def parse_all(s: str) -> List[Field | FormatError | Eor | Eoh]:
-
-    logging.info("Start parsing")
-    tags = s.split("<")
-    logging.info(f"potencial fields {len(tags)}")
-    records = map(__parse_record, tags[1:])
-    delim = map(__unpack(__parse_delimiters), records)
-    labeled = map(__unpack(__parse_label), delim)
-    records = list(map(__unpack(__read_field), labeled))
-    logging.info(f"fields {len(records)}")
-    out = [item for sublist in records for item in sublist]
-    logging.info("Done parsing")
-    return out
+def parse_all(s: str) -> Iterable[Field | FormatError | Eor | Eoh]:
+    if s == "":
+        return
+    tags = _iter_finder(s)
+    delim = map(__unpack(_parse_delimiters), tags)
+    labeled = map(__unpack(_parse_label), delim)
+    records = map(__unpack(_read_field), labeled)
+    out = reduce(chain, records)
+    yield from out

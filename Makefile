@@ -9,7 +9,7 @@ clean:
 	rm -rf .coverage
 
 test:
-	pytest -v tests/
+	pytest -vv -s -x --log-cli-level=WARNING tests/
 
 coverage: clean test
 	pytest --cov=adif2json --cov-report=html tests/

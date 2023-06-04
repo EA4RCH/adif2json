@@ -6,6 +6,7 @@ def test_report_invalid_label():
 
     res_l = list(to_dict(imput))
 
+    print(res_l)
     assert len(res_l) == 3
     res = res_l[0]
     assert res["type"] == "qso"
