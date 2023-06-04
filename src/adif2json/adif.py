@@ -1,4 +1,3 @@
-from functools import reduce
 import adif2json.parser as par
 
 

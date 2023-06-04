@@ -1,9 +1,7 @@
-from functools import reduce
 import logging
 import re
-from typing import Iterable, List, Optional, Tuple
+from typing import Iterable, Optional, Tuple
 from dataclasses import dataclass
-from itertools import chain
 
 
 @dataclass
@@ -34,6 +32,23 @@ def __unpack(fun):
 class FormatError:
     msg: str
     part: str
+
+
+def _iter_finder_stream(s: Iterable[str]) -> Iterable[Tuple[str, str]]:
+    logging.debug(f"Iter fields stream")
+    rest = ""
+    for l in s:
+        tofind = rest + l
+        labels = tofind.split("<")
+        for p in labels:
+            parts = p.split(">")
+            if len(parts) == 1:
+                rest = parts[0]
+            else:
+                label, value = parts
+                yield label, value
+
+    logging.debug(f"Iter fields done")
 
 
 def _iter_finder(s: str) -> Iterable[Tuple[str, str]]:
