@@ -2,14 +2,14 @@ from adif2json.adif import to_dict
 
 
 def test_empty():
-    imput = ""
+    imput = [""]
     res = list(to_dict(imput))
 
     assert len(res) == 0, "Empty string should return empty list"
 
 
 def test_simplest_empty_headers():
-    imput = "<EOH>\n"
+    imput = ["<EOH>\n"]
     res_l = list(to_dict(imput))
 
     assert len(res_l) == 1, "Empty headers should return one record"
@@ -23,7 +23,7 @@ def test_simplest_empty_headers():
 
 
 def test_simplest_empty_headers_with_space():
-    imput = "<EOH>         \n"
+    imput = ["<EOH>         \n"]
     res_l = list(to_dict(imput))
 
     assert len(res_l) == 1, "Empty headers should return one record"
@@ -37,7 +37,7 @@ def test_simplest_empty_headers_with_space():
 
 
 def test_one_header():
-    imput = "<myheader:1>1\n<EOH>\n"
+    imput = ["<myheader:1>1\n<EOH>\n"]
     res_l = list(to_dict(imput))
 
     assert len(res_l) == 1, "One header should return one record"
@@ -51,7 +51,7 @@ def test_one_header():
 
 
 def test_multiple_headers():
-    imput = "<myheader:1>1\n<myheader2:2>12\n<EOH>\n"
+    imput = ["<myheader:1>1\n<myheader2:2>12\n<EOH>\n"]
     res_l = list(to_dict(imput))
 
     assert len(res_l) == 1, "One header should return one record"
@@ -67,7 +67,7 @@ def test_multiple_headers():
 
 
 def test_first_header_bad_then_right():
-    imput = "<bad:x>1\n<myheader:1>1\n<EOH>\n"
+    imput = ["<bad:x>1\n<myheader:1>1\n<EOH>\n"]
     res_l = list(to_dict(imput))
 
     assert len(res_l) == 1, "One header should return one record"
@@ -90,7 +90,7 @@ def test_first_header_bad_then_right():
 
 
 def test_all_bad_headers():
-    imput = "<bad:x>1\n<bad2:x>12\n<EOH>\n"
+    imput = ["<bad:x>1\n<bad2:x>12\n<EOH>\n"]
     res_l = list(to_dict(imput))
 
     res = res_l[0]
@@ -104,7 +104,7 @@ def test_all_bad_headers():
 
 
 def test_last_bad_header():
-    imput = "<myheader:1>1\n<bad:x>12\n<EOH>\n"
+    imput = ["<myheader:1>1\n<bad:x>12\n<EOH>\n"]
     res_l = list(to_dict(imput))
 
     res = res_l[0]
@@ -123,7 +123,7 @@ def test_last_bad_header():
 
 
 def test_one_qso():
-    imput = "<call:6>EA4HFF<EOR>"
+    imput = ["<call:6>EA4HFF<EOR>"]
     res_l = list(to_dict(imput))
 
     res = res_l[0]
@@ -136,7 +136,7 @@ def test_one_qso():
 
 
 def test_several_qsos():
-    imput = "<call:6>EA4HFF<EOR><call:5>EA4AW<EOR><call:4>EC5A<EOR>"
+    imput = ["<call:6>EA4HFF<EOR><call:5>EA4AW<EOR><call:4>EC5A<EOR>"]
     res_l = list(to_dict(imput))
 
     res = res_l[0]
@@ -164,12 +164,12 @@ def test_several_qsos():
 
 
 def test_headers_and_qsos():
-    imput = """
-    <program:9>aidf2json<EOH>
-    <call:6>EA4HFF<EOR>
-    <call:5>EA4AW<EOR>
-    <call:4>EC5A<EOR>
-    """
+    imput = [
+        "<program:9>aidf2json<EOH>",
+        "<call:6>EA4HFF<EOR>",
+        "<call:5>EA4AW<EOR>",
+        "<call:4>EC5A<EOR>",
+    ]
     res_l = list(to_dict(imput))
 
     res = res_l[0]
@@ -205,8 +205,10 @@ def test_headers_and_qsos():
 
 
 def test_truncated_at_first():
-    imput = """
-    <call:6>EA4HFF"""
+    imput = [
+        "",
+        "<call:6>EA4HFF",
+    ]
     res_l = list(to_dict(imput))
 
     res = res_l[0]
@@ -222,11 +224,12 @@ def test_truncated_at_first():
 
 
 def test_truncated_qsos():
-    imput = """
-    <program:9>aidf2json<EOH>
-    <call:6>EA4HFF<EOR>
-    <call:5>EA4AW<EOR>
-    <call:4>EC5A"""
+    imput = [
+        "<program:9>aidf2json<EOH>",
+        "<call:6>EA4HFF<EOR>",
+        "<call:5>EA4AW<EOR>",
+        "<call:4>EC5A",
+    ]
     res_l = list(to_dict(imput))
 
     res = res_l[0]

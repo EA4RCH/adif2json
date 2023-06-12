@@ -109,7 +109,7 @@ def _read_field(
         return
     name, size, tipe = s
 
-    if len(v) == 0:
+    if size != 0 and len(v) == 0:
         logging.error(f"Empty value {repr(s)}")
         yield FormatError("Empty value", repr(s))
         return
