@@ -1,4 +1,5 @@
 import json
+from typing import Iterable
 
 
 def to_adif(input_json: str) -> str:
@@ -24,6 +25,16 @@ def to_adif(input_json: str) -> str:
     elif adif_out and "type" in content and content["type"] == "qso":
         adif_out += "<EOR>"
     return adif_out
+
+
+def from_json_generator(jsgen: Iterable[str]) -> Iterable[str]:
+    """
+    Convert a json generator to an adif generator.
+    """
+    for line in jsgen:
+        s = to_adif(line)
+        s += "\n"
+        yield s
 
 
 def from_json_lines(jsonlines: str) -> str:
