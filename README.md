@@ -14,6 +14,8 @@ A continuación, te explicamos cómo crear un virtualenv e instalar `adif2json` 
     pip install virtualenv
     ```
 
+   Ten en cuenta que si tienes Python 3.5 o superior el módulo virtualenv ahora viene incluido de serie.
+   
 3. Crea un nuevo virtualenv en la ubicación que prefieras utilizando el siguiente comando:
 
     ```bash
