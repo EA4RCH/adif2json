@@ -1,6 +1,7 @@
 import sys
 import os
 import argparse
+import json
 import logging
 
 import chardet
@@ -25,19 +26,18 @@ def read_adif(nombre_archivo, encoding):
         return f.read()
 
 
-# TODO: rename, this function is not about adif at all
-def read_adif_lines(nombre_archivo, encoding):
+def read_file_lines(nombre_archivo, encoding):
     with open(nombre_archivo, "r", encoding=encoding) as f:
         logging.info(f"Reading file {nombre_archivo} with encoding {encoding}")
         for line in f.readlines():
             yield line
 
 
-def write_json_lines(in_file, out_path, encoding):
+def write_json_lines(in_file, out_path, encoding, meta):
     with open(out_path, "w", encoding="utf-8") as out_file:
         try:
-            adif = read_adif_lines(in_file, encoding)
-            out = to_json_lines(adif)
+            adif = read_file_lines(in_file, encoding)
+            out = to_json_lines(adif, meta)
             lines = 0
             logging.debug(f"Writing to {out_path}")
             for l in out:
@@ -63,21 +63,37 @@ def adif2json():
     )
     args = parser.parse_args()
 
-    logging.StreamHandler(sys.stdout)
-    if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
-    else:
-        logging.getLogger().setLevel(logging.ERROR)
-
     if not os.path.isfile(args.file_path):
-        logging.error(f"El archivo {args.file_path} no existe")
+        print(f"El archivo {args.file_path} no existe")
         sys.exit(1)
 
     if not os.path.isdir(args.folder_path):
-        logging.error(f"La carpeta {args.folder_path} no existe")
+        print(f"La carpeta {args.folder_path} no existe")
         sys.exit(1)
 
     filename = os.path.basename(args.file_path)
+    log_path = os.path.join(args.folder_path, f"{filename}.log")
+    hand = logging.FileHandler(log_path, mode="w", encoding="utf-8")
+    if args.verbose:
+        hand.setLevel(logging.DEBUG)
+    else:
+        hand.setLevel(logging.ERROR)
+    logger = logging.getLogger()
+    logger.addHandler(hand)
+
+    if not os.path.isfile(f"{args.file_path}.meta"):
+        logging.warning(f"El archivo {args.file_path}.meta no existe")
+        logging.warning("Se asingaran valores por defecto")
+        meta = {
+            "type": "hunter",
+        }
+    else:
+        try:
+            meta = json.load(open(f"{args.file_path}.meta"))
+        except json.decoder.JSONDecodeError as e:
+            logging.error(f"Error leyendo el archivo de metadatos: {e}")
+            sys.exit(1)
+
     out_path = os.path.join(args.folder_path, f"{filename}.jsonl")
 
     if os.path.isfile(out_path):
@@ -85,13 +101,13 @@ def adif2json():
         sys.exit(1)
 
     logging.info(f"Converting {args.file_path} to {out_path}")
-    write_json_lines(args.file_path, out_path, args.encoding)
+    write_json_lines(args.file_path, out_path, args.encoding, meta)
 
 
 def write_adif_file(in_file, out_path, encoding):
     with open(out_path, "w", encoding="utf-8") as out_file:
         try:
-            jsonl = read_adif_lines(in_file, encoding)
+            jsonl = read_file_lines(in_file, encoding)
             adi = from_json_generator(jsonl)
             for l in adi:
                 out_file.write(l)

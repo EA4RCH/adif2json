@@ -7,16 +7,22 @@ from typing import Iterable, Optional, Dict, List
 from dataclasses import dataclass, asdict
 
 
-def to_json_lines(adif: Iterable[str]) -> Iterable[str]:
+def to_json_lines(
+    adif: Iterable[str], meta: Optional[Dict[str, str]] = None
+) -> Iterable[str]:
     def _to_jsonline(d: Dict[str, str]) -> str:
         return f"{json.dumps(d)}\n"
 
     if adif == "":
         logging.warning("Empty ADIF")
         return ""
+
     dicts = to_dict(adif)
     logging.info("Converted to dicts")
     logging.info("Converting to JSON lines")
+    if meta:
+        logging.info("Adding meta")
+        dicts = map(lambda d: {**d, "_meta": meta}, dicts)
     yield from map(_to_jsonline, dicts)
 
 
