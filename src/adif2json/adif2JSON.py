@@ -5,7 +5,7 @@ import sys, os, time, shutil
 #adif2JSON: Lee fichero .adif y genera JSON, solo con las etiquetas deseadas.
 #
 
-LISTA_TAGS = [ 'CALL', 'QSO_DATE', 'TIME_ON', 'BAND', 'CONTEST_ID', 'MODE', 'RST_SENT', 'RST_RCVD' ]
+LISTA_TAGS = [ 'CALL', 'QSO_DATE', 'TIME_ON', 'BAND', 'FREQ', 'CONTEST_ID', 'MODE', 'RST_SENT', 'RST_RCVD' ]
 
 TABULADOR = "\t"
 
@@ -20,7 +20,7 @@ def main(argv):
 
     #Open file for reading
     sourceFile = sys.argv[1]
-    fd_in = open(sourceFile, "r")
+    fd_in = open(sourceFile, "r", encoding="cp437", errors='ignore')
     if (fd_in == 0):
         print("#Error: no se puede abrir fichero para lectura.. " + sourceFile)
         sys.exit()
@@ -42,11 +42,10 @@ def main(argv):
     output_buffer = "[\n"
 
     #Procesamos linea a linea
-    procesar_registros = False
-
     for linea in lineas:
 
         diccionario = {}
+        procesar_registros = False
 
         #Elimino saltos de linea y espacios en blanco
         linea = linea.strip()
