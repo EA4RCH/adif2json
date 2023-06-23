@@ -10,6 +10,10 @@ from dataclasses import dataclass, asdict
 def to_json_lines(
     adif: Iterable[str], meta: Optional[Dict[str, str]] = None
 ) -> Iterable[str]:
+    """
+    Convert an ADIF file to JSON lines, it's a generator that yields
+    JSON lines. This will convert line by line, so it's memory efficient.
+    """
     def _to_jsonline(d: Dict[str, str]) -> str:
         return f"{json.dumps(d)}\n"
 
@@ -24,14 +28,6 @@ def to_json_lines(
         logging.info("Adding meta")
         dicts = map(lambda d: {**d, "_meta": meta}, dicts)
     yield from map(_to_jsonline, dicts)
-
-
-def to_json(adif: str) -> str:
-    if adif == "":
-        logging.warning("Empty ADIF")
-        return "{}"
-    dicts = list(to_dict(adif))
-    return f"{json.dumps(dicts)}"
 
 
 @dataclass
@@ -53,6 +49,12 @@ Parsed = par.Field | par.FormatError | par.Eoh | par.Eor
 
 
 def _merge(record: Fields, parsed: Parsed) -> Fields | Record:
+    """
+    Merge a parsed field with a record. This function is used to create
+    a record from a list of parsed fields.
+    This will control if the parsed field is a Field, a FormatError, a
+    EOH or a EOR.
+    """
     if not isinstance(record, Fields):
         logging.error(f"Unexpected record type {type(record)}")
         return record
@@ -94,6 +96,13 @@ def _merge(record: Fields, parsed: Parsed) -> Fields | Record:
 
 
 def _create_records(fields: Iterable[Parsed]) -> Iterable[Record | Fields]:
+    """
+    Create records from fields, it's a generator that yields
+    records as they are created.
+
+    It's a generator because it's more efficient than creating
+    a list of records and then yielding them.
+    """
     current = Fields({}, {}, [])
     for field in fields:
         logging.debug(f"Field: {field}")
@@ -106,6 +115,15 @@ def _create_records(fields: Iterable[Parsed]) -> Iterable[Record | Fields]:
 
 
 def _check_truncated(record: Record | Fields) -> Record:
+    """
+    Check if a record is truncated, if it is, it returns a
+    Record with the error, if not, it returns the record.
+
+    We can know if a record is truncated if it's a Fields
+    object. Because if it's a Record, it means that it has
+    been merged with an EOR, and if it's a Fields, it means
+    that it hasn't been merged with an EOR.
+    """
     if isinstance(record, Record):
         return record
     if isinstance(record, Fields):
@@ -121,6 +139,10 @@ def _check_truncated(record: Record | Fields) -> Record:
 
 
 def _to_dict(record: Record) -> Dict:
+    """
+    helper function to convert a record to a dictionary, it's a
+    way faster than using asdict from dataclasses
+    """
     return {
         "type": record.type,
         "fields": record.fields,
@@ -130,6 +152,11 @@ def _to_dict(record: Record) -> Dict:
 
 
 def to_dict(adif: Iterable[str]) -> Iterable[Dict]:
+    """
+    Convert ADIF to a list of dictionaries, this is the
+    main function of the module. It takes an iterable of
+    ADIF lines and returns an iterable of dictionaries.
+    """
     if adif == "":
         logging.warning("Empty ADIF")
         return
