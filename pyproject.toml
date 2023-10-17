@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "adif2json"
+version = "0.1.0"
+description = "convert adif files to json files and return"
+authors = ["César Gallego <gallego.cesar@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+aiofiles = "*"
+chardet = "*"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.2"
+pytest-cov = "^4.1.0"
+snakeviz = "^2.2.0"
+

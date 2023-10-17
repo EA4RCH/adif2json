@@ -9,7 +9,7 @@ def test_empty():
 
 def test_simple_qso():
     adif = (
-        """ {"type": "qso", "fields": {"call": "EA4HFF"}, "errors": [], "tipe": {}} """
+            """ { "call": "EA4HFF", "_meta": {"type": "qso"}} """
     )
     expected = "<call:6>EA4HFF<EOR>"
     res = to_adif(adif)
@@ -19,8 +19,8 @@ def test_simple_qso():
 
 def test_simple_qso_with_header():
     adif = """
-        {"type": "headers", "fields": {"myheader": "1"}, "errors": [], "tipe": {}}
-        {"type": "qso", "fields": {"call": "EA4HFF"}, "errors": [], "tipe": {}}
+        {"myheader": "1", "_meta": {"type": "headers"}}
+        {"call": "EA4HFF", "_meta": {"type": "qso"}}
     """
     expected = "<myheader:1>1<EOH><call:6>EA4HFF<EOR>"
     res = from_json_lines(adif)

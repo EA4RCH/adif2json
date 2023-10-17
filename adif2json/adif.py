@@ -17,6 +17,13 @@ def to_json_lines(
     def _to_jsonline(d: Dict[str, str]) -> str:
         return f"{json.dumps(d)}\n"
 
+    def _meta_addition(d: Dict) -> Dict:
+        if meta:
+            out = {**d}
+            for k, v in meta.items():
+                out["_meta"][k] = v
+        return d
+
     if adif == "":
         logging.warning("Empty ADIF")
         return ""
@@ -26,7 +33,7 @@ def to_json_lines(
     logging.info("Converting to JSON lines")
     if meta:
         logging.info("Adding meta")
-        dicts = map(lambda d: {**d, "_meta": meta}, dicts)
+        dicts = map(_meta_addition, dicts)
     yield from map(_to_jsonline, dicts)
 
 
@@ -143,12 +150,14 @@ def _to_dict(record: Record) -> Dict:
     helper function to convert a record to a dictionary, it's a
     way faster than using asdict from dataclasses
     """
-    return {
+    meta = {
         "type": record.type,
-        "fields": record.fields,
-        "types": record.types,
-        "errors": record.errors,
     }
+    if record.types:
+        meta["types"] = record.types
+    if record.errors:
+        meta["errors"] = record.errors
+    return {**record.fields, "_meta": meta}
 
 
 def to_dict(adif: Iterable[str]) -> Iterable[Dict]:

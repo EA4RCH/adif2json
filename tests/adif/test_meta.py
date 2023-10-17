@@ -12,11 +12,15 @@ def test_empty_meta():
 
     assert len(adif) == 1
     l = json.loads(adif[0])
-    assert "fields" in l
-    f = l["fields"]
-    assert "call" in f
-    assert f["call"] == "EA4HFF"
-    assert "_meta" not in l
+
+    expected = {
+        "call": "EA4HFF",
+        "_meta": {
+            "type": "qso"
+        }
+    }
+
+    assert l == expected
 
 
 def test_simple_meta():
@@ -24,7 +28,7 @@ def test_simple_meta():
         "<call:6>EA4HFF<EOR>",
     ]
     meta = {
-        "type": "activation",
+        "source": "activation",
         "activator": "EA4HFF",
         "dme": "28079",
         "vertice": "VGM-001",
@@ -33,14 +37,16 @@ def test_simple_meta():
 
     assert len(adif) == 1
     l = json.loads(adif[0])
-    assert "fields" in l
-    f = l["fields"]
-    assert "call" in f
-    assert f["call"] == "EA4HFF"
-    assert "_meta" in l
-    assert l["_meta"] == {
-        "type": "activation",
-        "activator": "EA4HFF",
-        "dme": "28079",
-        "vertice": "VGM-001",
+
+    expected = {
+        "call": "EA4HFF",
+        "_meta": {
+            "type": "qso",
+            "source": "activation",
+            "activator": "EA4HFF",
+            "dme": "28079",
+            "vertice": "VGM-001",
+        }
     }
+
+    assert l == expected

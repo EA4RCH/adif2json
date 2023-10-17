@@ -10,19 +10,19 @@ def to_adif(input_json: str) -> str:
         return ""
     content = json.loads(input_json)
     adif_out = ""
-    if "fields" in content:
-        for label in content["fields"].keys():
-            value = content["fields"][label]
-            tipe = None
-            if "types" in content and content["types"] and label in content["types"]:
-                tipe = content["types"][label]
-            if tipe:
+    if len(content) > 1:
+        for label in content.keys():
+            if label == "_meta":
+                continue
+            value = content[label]
+            if "types" in content["_meta"] and label in content["_meta"]["types"]:
+                tipe = content["_meta"]["types"][label]
                 adif_out += f"<{label}:{len(value)}:{tipe}>{value}"
             else:
                 adif_out += f"<{label}:{len(value)}>{value}"
-    if adif_out and "type" in content and content["type"] == "headers":
+    if adif_out and "type" in content["_meta"] and content["_meta"]["type"] == "headers":
         adif_out += "<EOH>"
-    elif adif_out and "type" in content and content["type"] == "qso":
+    elif adif_out and "type" in content["_meta"] and content["_meta"]["type"] == "qso":
         adif_out += "<EOR>"
     return adif_out
 

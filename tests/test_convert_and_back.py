@@ -68,4 +68,8 @@ def test_multiple_qso_with_multiple_header_and_types():
     json_res = list(to_json_lines(adif))
     res = from_json_lines("".join(json_res)).strip()
 
+    print(json_res)
+    print("====================")
+    print(res)
+
     assert _string_similar(res, "".join(adif))

@@ -6,21 +6,33 @@ def test_report_invalid_label():
 
     res_l = list(to_dict(imput))
 
-    assert len(res_l) == 3
-    res = res_l[0]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"call": "EA4HFF"}
-    assert res["errors"] is None
-    res = res_l[1]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"call": "EA4AW"}
-    assert res["errors"] is None
-    res = res_l[2]
-    assert res["type"] == "qso"
-    assert res["fields"] == {}
-    assert res["errors"] is not None
-    assert len(res["errors"]) == 1
-    # TODO: check error
+    expected_l = [
+        {
+            "call": "EA4HFF",
+            "_meta": {
+                "type": "qso",
+            }
+        },
+        {
+            "call": "EA4AW",
+            "_meta": {
+                "type": "qso",
+            }
+        },
+        {
+            "_meta": {
+                "type": "qso",
+                "errors": [
+                    {
+                        "msg": "Empty label",
+                        "part": ":4",
+                    }
+                ]
+            }
+        }
+    ]
+
+    assert res_l == expected_l
 
 
 def test_report_invalid_size():
@@ -28,21 +40,33 @@ def test_report_invalid_size():
 
     res_l = list(to_dict(imput))
 
-    assert len(res_l) == 3
-    res = res_l[0]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"call": "EA4HFF"}
-    assert res["errors"] is None
-    res = res_l[1]
-    assert res["type"] == "qso"
-    assert res["fields"] == {}
-    assert res["errors"] is not None
-    assert len(res["errors"]) == 1
-    # TODO: check error
-    res = res_l[2]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"call": "EC5A"}
-    assert res["errors"] is None
+    expected_l = [
+        {
+            "call": "EA4HFF",
+            "_meta": {
+                "type": "qso",
+            }
+        },
+        {
+            "_meta": {
+                "type": "qso",
+                "errors": [
+                    {
+                        "msg": "Size must be a non decimal number",
+                        "part": "call:x",
+                    }
+                ]
+            }
+        },
+        {
+            "call": "EC5A",
+            "_meta": {
+                "type": "qso",
+            }
+        }
+    ]
+
+    assert res_l == expected_l
 
 
 def test_report_invalid_type():
@@ -50,41 +74,67 @@ def test_report_invalid_type():
 
     res_l = list(to_dict(imput))
 
-    assert len(res_l) == 3
-    res = res_l[0]
-    assert res["type"] == "qso"
-    assert res["fields"] == {}
-    assert res["errors"] is not None
-    assert len(res["errors"]) == 1
-    # TODO: check error
-    res = res_l[1]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"call": "EA4AW"}
-    assert res["errors"] is None
-    res = res_l[2]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"call": "EC5A"}
-    assert res["errors"] is None
+    expected_l = [
+        {
+            "_meta": {
+                "type": "qso",
+                "errors": [
+                    {
+                        "msg": "Type must be one Character",
+                        "part": "call:6:8",
+                    }
+                ]
+            }
+        },
+        {
+            "call": "EA4AW",
+            "_meta": {
+                "type": "qso",
+            }
+        },
+        {
+            "call": "EC5A",
+            "_meta": {
+                "type": "qso",
+            }
+        }
+    ]
+
+    assert res_l == expected_l
 
 
 def test_report_exceedent_value():
     imput = ["<call:6>EA4HFF tha best<EOR><call:5>EA4AW<EOR><call:4>EC5A<EOR>"]
     res_l = list(to_dict(imput))
 
-    assert len(res_l) == 3
-    res = res_l[0]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"call": "EA4HFF"}
-    assert len(res["errors"]) == 1
-    # TODO: check error
-    res = res_l[1]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"call": "EA4AW"}
-    assert res["errors"] is None
-    res = res_l[2]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"call": "EC5A"}
-    assert res["errors"] is None
+    expected_l = [
+        {
+            "call": "EA4HFF",
+            "_meta": {
+                "type": "qso",
+                "errors": [
+                    {
+                        "msg": "Exeedent value",
+                        "part": " tha best",
+                    }
+                ]
+            }
+        },
+        {
+            "call": "EA4AW",
+            "_meta": {
+                "type": "qso",
+            }
+        },
+        {
+            "call": "EC5A",
+            "_meta": {
+                "type": "qso",
+            }
+        }
+    ]
+
+    assert res_l == expected_l
 
 
 def test_report_invalid_label_multifield():
@@ -96,21 +146,36 @@ def test_report_invalid_label_multifield():
 
     res_l = list(to_dict(imput))
 
-    assert len(res_l) == 3
-    res = res_l[0]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"call": "EA4HFF", "band": "40m"}
-    assert res["errors"] is None
-    res = res_l[1]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"call": "EA4AW", "band": "40m"}
-    assert res["errors"] is None
-    res = res_l[2]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"band": "40m"}
-    assert res["errors"] is not None
-    assert len(res["errors"]) == 1
-    # TODO: check error
+    expected_l = [
+        {
+            "call": "EA4HFF",
+            "band": "40m",
+            "_meta": {
+                "type": "qso",
+            }
+        },
+        {
+            "call": "EA4AW",
+            "band": "40m",
+            "_meta": {
+                "type": "qso",
+            }
+        },
+        {
+            "band": "40m",
+            "_meta": {
+                "type": "qso",
+                "errors": [
+                    {
+                        "msg": "Empty label",
+                        "part": ":4",
+                    }
+                ]
+            }
+        }
+    ]
+
+    assert res_l == expected_l
 
 
 def test_report_invalid_size_multifield():
@@ -122,21 +187,36 @@ def test_report_invalid_size_multifield():
 
     res_l = list(to_dict(imput))
 
-    assert len(res_l) == 3
-    res = res_l[0]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"call": "EA4HFF", "band": "40m"}
-    assert res["errors"] is None
-    res = res_l[1]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"band": "40m"}
-    assert res["errors"] is not None
-    assert len(res["errors"]) == 1
-    # TODO: check error
-    res = res_l[2]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"call": "EC5A", "band": "40m"}
-    assert res["errors"] is None
+    expected_l = [
+        {
+            "call": "EA4HFF",
+            "band": "40m",
+            "_meta": {
+                "type": "qso",
+            }
+        },
+        {
+            "band": "40m",
+            "_meta": {
+                "type": "qso",
+                "errors": [
+                    {
+                        "msg": "Size must be a non decimal number",
+                        "part": "call:x",
+                    }
+                ]
+            }
+        },
+        {
+            "call": "EC5A",
+            "band": "40m",
+            "_meta": {
+                "type": "qso",
+            }
+        }
+    ]
+
+    assert res_l == expected_l
 
 
 def test_report_invalid_type_multifield():
@@ -148,20 +228,36 @@ def test_report_invalid_type_multifield():
 
     res_l = list(to_dict(imput))
 
-    assert len(res_l) == 3
-    res = res_l[0]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"band": "40m"}
-    assert len(res["errors"]) == 1
-    # TODO: check error
-    res = res_l[1]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"call": "EA4AW", "band": "40m"}
-    assert res["errors"] is None
-    res = res_l[2]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"call": "EC5A", "band": "40m"}
-    assert res["errors"] is None
+    expected_l = [
+        {
+            "band": "40m",
+            "_meta": {
+                "type": "qso",
+                "errors": [
+                    {
+                        "msg": "Type must be one Character",
+                        "part": "call:6:8",
+                    }
+                ]
+            }
+        },
+        {
+            "call": "EA4AW",
+            "band": "40m",
+            "_meta": {
+                "type": "qso",
+            }
+        },
+        {
+            "call": "EC5A",
+            "band": "40m",
+            "_meta": {
+                "type": "qso",
+            }
+        }
+    ]
+
+    assert res_l == expected_l
 
 
 def test_report_exceedent_value_multifield():
@@ -173,17 +269,34 @@ def test_report_exceedent_value_multifield():
 
     res_l = list(to_dict(imput))
 
-    assert len(res_l) == 3
-    res = res_l[0]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"call": "EA4HFF", "band": "40m"}
-    assert len(res["errors"]) == 1
-    # TODO: check error
-    res = res_l[1]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"call": "EA4AW", "band": "40m"}
-    assert res["errors"] is None
-    res = res_l[2]
-    assert res["type"] == "qso"
-    assert res["fields"] == {"call": "EC5A", "band": "40m"}
-    assert res["errors"] is None
+    expected_l = [
+        {
+            "call": "EA4HFF",
+            "band": "40m",
+            "_meta": {
+                "type": "qso",
+                "errors": [
+                    {
+                        "msg": "Exeedent value",
+                        "part": " tha best",
+                    }
+                ]
+            }
+        },
+        {
+            "call": "EA4AW",
+            "band": "40m",
+            "_meta": {
+                "type": "qso",
+            }
+        },
+        {
+            "call": "EC5A",
+            "band": "40m",
+            "_meta": {
+                "type": "qso",
+            }
+        }
+    ]
+
+    assert res_l == expected_l
