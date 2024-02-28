@@ -14,3 +14,6 @@ pytest = "^7.4.2"
 pytest-cov = "^4.1.0"
 snakeviz = "^2.2.0"
 
+[tool.poetry.scripts]
+adif2json = "adif2json.__main__:adif2json"
+json2adif = "adif2json.__main__:json2adif"
