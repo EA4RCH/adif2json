@@ -15,6 +15,10 @@ authors = [
 [tool.setuptools]
 packages = ["adif2json"]
 
+[project.scripts]
+adif2json = "adif2json.__main__:adif2json"
+json2adif = "adif2json.__main__:json2adif"
+
 [tool.poetry.dependencies]
 python = "^3.10"
 aiofiles = "*"
