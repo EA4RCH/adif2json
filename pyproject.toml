@@ -12,6 +12,9 @@ authors = [
   {name = "Cesar Gallego", email = "gallego.cesar@gmail.com"},
 ]
 
+[tool.setuptools]
+packages = ["adif2json"]
+
 [tool.setuptools.packages.find]
 exclude = [
     { path = "profiling" }
