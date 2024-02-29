@@ -6,13 +6,9 @@ authors = ["Cesar Gallego <gallego.cesar@gmail.com>"]
 
 [project]
 name = "adif2json"
-version = "0.1.0"
 description = "convert adif files to json files and return"
 authors = [
-  {
-    name = "Cesar Gallego",
-    email = "gallego.cesar@gmail.com"
-  }
+  {name = "Cesar Gallego", email = "gallego.cesar@gmail.com"},
 ]
 
 [tool.setuptools.packages.find]
