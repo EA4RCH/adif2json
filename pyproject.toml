@@ -2,7 +2,7 @@
 name = "adif2json"
 version = "0.1.0"
 description = "convert adif files to json files and return"
-authors = ["César Gallego <gallego.cesar@gmail.com>"]
+authors = ["Cesar Gallego <gallego.cesar@gmail.com>"]
 
 [project]
 name = "adif2json"
@@ -10,8 +10,8 @@ version = "0.1.0"
 description = "convert adif files to json files and return"
 authors = [
   {
-    name = "César Gallego",
-    email = "<gallego.cesar@gmail.com>"
+    name = "Cesar Gallego",
+    email = "gallego.cesar@gmail.com"
   }
 ]
 
