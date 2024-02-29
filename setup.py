@@ -8,6 +8,10 @@ setup(
     description='convert adif to json and back',
     license='MIT',
     packages=['adif2json'],
+    install_requires=[
+        "aiofiles",
+        "chardet"
+    ],
     entry_points={
         'console_scripts': [
             'adif2json = adif2json.__main__:main',
