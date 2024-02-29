@@ -14,9 +14,6 @@ authors = [
 
 [tool.setuptools]
 packages = ["adif2json"]
-exclude = [
-    { path = "profiling" }
-]
 
 [tool.poetry.dependencies]
 python = "^3.10"
