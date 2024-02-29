@@ -3,6 +3,6 @@
 
 pkgs.mkShell {
   packages = [
-    pkgs.poetry
+    pkgs.python311
   ];
 }
