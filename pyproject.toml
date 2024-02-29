@@ -4,22 +4,6 @@ version = "0.1.0"
 description = "convert adif files to json files and return"
 authors = ["Cesar Gallego <gallego.cesar@gmail.com>"]
 
-[project]
-name = "adif2json"
-description = "convert adif files to json files and return"
-version = "0.1.0"
-dynamic = ["scripts"]
-authors = [
-  {name = "Cesar Gallego", email = "gallego.cesar@gmail.com"},
-]
-
-[tool.setuptools]
-packages = ["adif2json"]
-
-[project.scripts]
-adif2json = "adif2json.__main__:adif2json"
-json2adif = "adif2json.__main__:json2adif"
-
 [tool.poetry.dependencies]
 python = "^3.10"
 aiofiles = "*"
