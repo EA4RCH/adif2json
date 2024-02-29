@@ -7,6 +7,7 @@ authors = ["Cesar Gallego <gallego.cesar@gmail.com>"]
 [project]
 name = "adif2json"
 description = "convert adif files to json files and return"
+version = "0.1.0"
 authors = [
   {name = "Cesar Gallego", email = "gallego.cesar@gmail.com"},
 ]
