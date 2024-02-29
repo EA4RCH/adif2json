@@ -8,7 +8,12 @@ authors = ["César Gallego <gallego.cesar@gmail.com>"]
 name = "adif2json"
 version = "0.1.0"
 description = "convert adif files to json files and return"
-authors = ["César Gallego <gallego.cesar@gmail.com>"]
+authors = [
+  {
+    name = "César Gallego",
+    email = "<gallego.cesar@gmail.com>"
+  }
+]
 
 [tool.setuptools.packages.find]
 exclude = [
