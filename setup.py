@@ -14,8 +14,8 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'adif2json = adif2json.__main__:main',
-            'json2adif = adif2json.__main__:json2adif'
+            'adif2json = adif2json.adif2json:main',
+            'json2adif = adif2json.json2adif:main'
         ]
     },
 )
