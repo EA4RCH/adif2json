@@ -97,5 +97,9 @@ def json2adif():
     write_adif_file(args.file_path, out_path, args.encoding)
 
 
+def main():
+    json2adif()
+
+
 if __name__ == "__main__":
     json2adif()

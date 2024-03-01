@@ -116,5 +116,10 @@ def adif2json():
     logging.info(f"Converting {args.file_path} to {out_path}")
     write_json_lines(args.file_path, out_path, args.encoding, meta)
 
+
+def main():
+    adif2json() 
+
+
 if __name__ == "__main__":
     adif2json()
