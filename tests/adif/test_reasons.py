@@ -9,27 +9,21 @@ def test_report_invalid_label():
     expected_l = [
         {
             "call": "EA4HFF",
-            "_meta": {
-                "type": "qso",
-            }
+            "_type": "qso",
         },
         {
             "call": "EA4AW",
-            "_meta": {
-                "type": "qso",
-            }
+            "_type": "qso",
         },
         {
-            "_meta": {
-                "type": "qso",
-                "errors": [
-                    {
-                        "msg": "Empty label",
-                        "part": ":4",
-                    }
-                ]
-            }
-        }
+            "_type": "qso",
+            "_errors": [
+                {
+                    "msg": "Empty label",
+                    "part": ":4",
+                }
+            ],
+        },
     ]
 
     assert res_l == expected_l
@@ -43,27 +37,21 @@ def test_report_invalid_size():
     expected_l = [
         {
             "call": "EA4HFF",
-            "_meta": {
-                "type": "qso",
-            }
+            "_type": "qso",
         },
         {
-            "_meta": {
-                "type": "qso",
-                "errors": [
-                    {
-                        "msg": "Size must be a non decimal number",
-                        "part": "call:x",
-                    }
-                ]
-            }
+            "_type": "qso",
+            "_errors": [
+                {
+                    "msg": "Size must be a non decimal number",
+                    "part": "call:x",
+                }
+            ],
         },
         {
             "call": "EC5A",
-            "_meta": {
-                "type": "qso",
-            }
-        }
+            "_type": "qso",
+        },
     ]
 
     assert res_l == expected_l
@@ -76,28 +64,22 @@ def test_report_invalid_type():
 
     expected_l = [
         {
-            "_meta": {
-                "type": "qso",
-                "errors": [
-                    {
-                        "msg": "Type must be one Character",
-                        "part": "call:6:8",
-                    }
-                ]
-            }
+            "_type": "qso",
+            "_errors": [
+                {
+                    "msg": "Type must be one Character",
+                    "part": "call:6:8",
+                }
+            ],
         },
         {
             "call": "EA4AW",
-            "_meta": {
-                "type": "qso",
-            }
+            "_type": "qso",
         },
         {
             "call": "EC5A",
-            "_meta": {
-                "type": "qso",
-            }
-        }
+            "_type": "qso",
+        },
     ]
 
     assert res_l == expected_l
@@ -110,28 +92,22 @@ def test_report_exceedent_value():
     expected_l = [
         {
             "call": "EA4HFF",
-            "_meta": {
-                "type": "qso",
-                "errors": [
-                    {
-                        "msg": "Exeedent value",
-                        "part": " tha best",
-                    }
-                ]
-            }
+            "_type": "qso",
+            "_errors": [
+                {
+                    "msg": "Exeedent value",
+                    "part": " tha best",
+                }
+            ],
         },
         {
             "call": "EA4AW",
-            "_meta": {
-                "type": "qso",
-            }
+            "_type": "qso",
         },
         {
             "call": "EC5A",
-            "_meta": {
-                "type": "qso",
-            }
-        }
+            "_type": "qso",
+        },
     ]
 
     assert res_l == expected_l
@@ -150,29 +126,23 @@ def test_report_invalid_label_multifield():
         {
             "call": "EA4HFF",
             "band": "40m",
-            "_meta": {
-                "type": "qso",
-            }
+            "_type": "qso",
         },
         {
             "call": "EA4AW",
             "band": "40m",
-            "_meta": {
-                "type": "qso",
-            }
+            "_type": "qso",
         },
         {
             "band": "40m",
-            "_meta": {
-                "type": "qso",
-                "errors": [
-                    {
-                        "msg": "Empty label",
-                        "part": ":4",
-                    }
-                ]
-            }
-        }
+            "_type": "qso",
+            "_errors": [
+                {
+                    "msg": "Empty label",
+                    "part": ":4",
+                }
+            ],
+        },
     ]
 
     assert res_l == expected_l
@@ -191,29 +161,23 @@ def test_report_invalid_size_multifield():
         {
             "call": "EA4HFF",
             "band": "40m",
-            "_meta": {
-                "type": "qso",
-            }
+            "_type": "qso",
         },
         {
             "band": "40m",
-            "_meta": {
-                "type": "qso",
-                "errors": [
-                    {
-                        "msg": "Size must be a non decimal number",
-                        "part": "call:x",
-                    }
-                ]
-            }
+            "_type": "qso",
+            "_errors": [
+                {
+                    "msg": "Size must be a non decimal number",
+                    "part": "call:x",
+                }
+            ],
         },
         {
             "call": "EC5A",
             "band": "40m",
-            "_meta": {
-                "type": "qso",
-            }
-        }
+            "_type": "qso",
+        },
     ]
 
     assert res_l == expected_l
@@ -231,30 +195,24 @@ def test_report_invalid_type_multifield():
     expected_l = [
         {
             "band": "40m",
-            "_meta": {
-                "type": "qso",
-                "errors": [
-                    {
-                        "msg": "Type must be one Character",
-                        "part": "call:6:8",
-                    }
-                ]
-            }
+            "_type": "qso",
+            "_errors": [
+                {
+                    "msg": "Type must be one Character",
+                    "part": "call:6:8",
+                }
+            ],
         },
         {
             "call": "EA4AW",
             "band": "40m",
-            "_meta": {
-                "type": "qso",
-            }
+            "_type": "qso",
         },
         {
             "call": "EC5A",
             "band": "40m",
-            "_meta": {
-                "type": "qso",
-            }
-        }
+            "_type": "qso",
+        },
     ]
 
     assert res_l == expected_l
@@ -273,30 +231,24 @@ def test_report_exceedent_value_multifield():
         {
             "call": "EA4HFF",
             "band": "40m",
-            "_meta": {
-                "type": "qso",
-                "errors": [
-                    {
-                        "msg": "Exeedent value",
-                        "part": " tha best",
-                    }
-                ]
-            }
+            "_type": "qso",
+            "_errors": [
+                {
+                    "msg": "Exeedent value",
+                    "part": " tha best",
+                }
+            ],
         },
         {
             "call": "EA4AW",
             "band": "40m",
-            "_meta": {
-                "type": "qso",
-            }
+            "_type": "qso",
         },
         {
             "call": "EC5A",
             "band": "40m",
-            "_meta": {
-                "type": "qso",
-            }
-        }
+            "_type": "qso",
+        },
     ]
 
     assert res_l == expected_l

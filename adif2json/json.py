@@ -11,18 +11,22 @@ def to_adif(input_json: str) -> str:
     content = json.loads(input_json)
     adif_out = ""
     if len(content) > 1:
+        types = content.get("_types")
+        if not isinstance(types, dict):
+            types = {}
         for label in content.keys():
-            if label == "_meta":
+            if label.startswith("_"):
                 continue
             value = content[label]
-            if "types" in content["_meta"] and label in content["_meta"]["types"]:
-                tipe = content["_meta"]["types"][label]
+            if label in types:
+                tipe = types[label]
                 adif_out += f"<{label}:{len(value)}:{tipe}>{value}"
             else:
                 adif_out += f"<{label}:{len(value)}>{value}"
-    if adif_out and "type" in content["_meta"] and content["_meta"]["type"] == "headers":
+    record_type = content.get("_type")
+    if adif_out and record_type == "headers":
         adif_out += "<EOH>"
-    elif adif_out and "type" in content["_meta"] and content["_meta"]["type"] == "qso":
+    elif adif_out and record_type == "qso":
         adif_out += "<EOR>"
     return adif_out
 
