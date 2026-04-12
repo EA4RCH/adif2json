@@ -9,6 +9,25 @@ import chardet
 from adif2json.adif import to_json_lines
 
 
+_RESERVED_FLAT_KEYS = {"_type", "_types", "_errors"}
+
+
+def _validate_meta(meta):
+    if meta is None:
+        return {}
+    if not isinstance(meta, dict):
+        raise ValueError("Invalid .meta content: expected a JSON object (dict)")
+    for key in meta.keys():
+        if not isinstance(key, str):
+            raise ValueError(f"Invalid meta key {key!r}: keys must be strings")
+        if key.startswith("_"):
+            raise ValueError(f"Invalid meta key '{key}': keys cannot start with '_'")
+        flat_key = f"_{key}"
+        if flat_key in _RESERVED_FLAT_KEYS:
+            raise ValueError(f"Invalid meta key '{key}': '{flat_key}' is reserved")
+    return meta
+
+
 # TODO: filemagic? it seems to be a better option
 def get_encoding(file_path):
     """
@@ -49,10 +68,15 @@ def write_json_lines(in_file, out_path, encoding, meta):
                 logging.debug(f"Writing line {lines}")
                 out_file.write(lin)
             logging.info(f"Written {lines} lines to {out_path}")
+        except ValueError as e:
+            logging.error(str(e))
+            print(f"Error en metadatos (.meta): {e}", file=sys.stderr)
+            sys.exit(1)
         except UnicodeDecodeError as e:
             logging.error(f"Error decoding line: {e}")
             logging.error(f"Try with encoding: {get_encoding(in_file)}")
             logging.error("Please provide correct encoding")
+            sys.exit(1)
 
 
 def adif2json():
@@ -95,15 +119,19 @@ def adif2json():
 
     if not os.path.isfile(f"{args.file_path}.meta"):
         logging.warning(f"El archivo {args.file_path}.meta no existe")
-        logging.warning("Se asingaran valores por defecto")
-        meta = {
-            "type": "hunter",
-        }
+        logging.warning("No se agregaran metadatos extra")
+        meta = {}
     else:
         try:
-            meta = json.load(open(f"{args.file_path}.meta"))
+            with open(f"{args.file_path}.meta", "r", encoding="utf-8") as f:
+                meta = json.load(f)
+            meta = _validate_meta(meta)
         except json.decoder.JSONDecodeError as e:
             logging.error(f"Error leyendo el archivo de metadatos: {e}")
+            sys.exit(1)
+        except ValueError as e:
+            logging.error(str(e))
+            print(f"Error en metadatos (.meta): {e}", file=sys.stderr)
             sys.exit(1)
 
     out_path = os.path.join(args.folder_path, f"{filename}.jsonl")
@@ -118,7 +146,7 @@ def adif2json():
 
 
 def main():
-    adif2json() 
+    adif2json()
 
 
 if __name__ == "__main__":

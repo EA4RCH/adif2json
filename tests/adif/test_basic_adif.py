@@ -16,9 +16,7 @@ def test_simplest_empty_headers():
     res = res_l[0]
 
     expected = {
-        "_meta": {
-            "type": "headers"
-        }
+        "_type": "headers",
     }
 
     assert res == expected
@@ -32,9 +30,7 @@ def test_simplest_empty_headers_with_space():
     res = res_l[0]
 
     expected = {
-        "_meta": {
-            "type": "headers"
-        }
+        "_type": "headers",
     }
 
     assert res == expected
@@ -49,9 +45,7 @@ def test_one_header():
 
     expected = {
         "myheader": "1",
-        "_meta": {
-            "type": "headers"
-        }
+        "_type": "headers",
     }
 
     assert res == expected
@@ -67,9 +61,7 @@ def test_multiple_headers():
     expected = {
         "myheader": "1",
         "myheader2": "12",
-        "_meta": {
-            "type": "headers"
-        }
+        "_type": "headers",
     }
 
     assert res == expected
@@ -84,12 +76,10 @@ def test_first_header_bad_then_right():
 
     expected = {
         "myheader": "1",
-        "_meta": {
-            "type": "headers",
-            "errors": [
-                {"msg": "Size must be a non decimal number", "part": "bad:x"}
-            ]
-        }
+        "_type": "headers",
+        "_errors": [
+            {"msg": "Size must be a non decimal number", "part": "bad:x"}
+        ],
     }
 
     assert res == expected
@@ -102,13 +92,11 @@ def test_all_bad_headers():
     res = res_l[0]
 
     expected = {
-        "_meta": {
-            "type": "headers",
-            "errors": [
-                {"msg": "Size must be a non decimal number", "part": "bad:x"},
-                {"msg": "Size must be a non decimal number", "part": "bad2:x"}
-            ]
-        }
+        "_type": "headers",
+        "_errors": [
+            {"msg": "Size must be a non decimal number", "part": "bad:x"},
+            {"msg": "Size must be a non decimal number", "part": "bad2:x"},
+        ],
     }
 
     assert res == expected
@@ -122,12 +110,10 @@ def test_last_bad_header():
 
     expected = {
         "myheader": "1",
-        "_meta": {
-            "type": "headers",
-            "errors": [
-                {"msg": "Size must be a non decimal number", "part": "bad:x"}
-            ]
-        }
+        "_type": "headers",
+        "_errors": [
+            {"msg": "Size must be a non decimal number", "part": "bad:x"}
+        ],
     }
 
     assert res == expected
@@ -141,10 +127,10 @@ def test_one_qso():
 
     expected = {
         "call": "EA4HFF",
-        "_meta": {
-            "type": "qso",
-        }
+        "_type": "qso",
     }
+
+    assert res == expected
 
 
 def test_several_qsos():
@@ -154,22 +140,16 @@ def test_several_qsos():
     expected_l = [
         {
             "call": "EA4HFF",
-            "_meta": {
-                "type": "qso",
-            }
+            "_type": "qso",
         },
         {
             "call": "EA4AW",
-            "_meta": {
-                "type": "qso",
-            }
+            "_type": "qso",
         },
         {
             "call": "EC5A",
-            "_meta": {
-                "type": "qso",
-            }
-        }
+            "_type": "qso",
+        },
     ]
 
     assert res_l == expected_l
@@ -187,28 +167,20 @@ def test_headers_and_qsos():
     expected_l = [
         {
             "program": "aidf2json",
-            "_meta": {
-                "type": "headers",
-            }
+            "_type": "headers",
         },
         {
             "call": "EA4HFF",
-            "_meta": {
-                "type": "qso",
-            }
+            "_type": "qso",
         },
         {
             "call": "EA4AW",
-            "_meta": {
-                "type": "qso",
-            }
+            "_type": "qso",
         },
         {
             "call": "EC5A",
-            "_meta": {
-                "type": "qso",
-            }
-        }
+            "_type": "qso",
+        },
     ]
 
     assert res_l == expected_l
@@ -225,15 +197,13 @@ def test_truncated_at_first():
 
     expected = {
         "call": "EA4HFF",
-        "_meta": {
-            "errors": [
-                {
-                    "msg": "Truncated Record",
-                    "part": ""
-                }
-            ],
-            "type": "qso"
-        }
+        "_type": "qso",
+        "_errors": [
+            {
+                "msg": "Truncated Record",
+                "part": "",
+            }
+        ],
     }
 
     assert res == expected
@@ -251,34 +221,26 @@ def test_truncated_qsos():
     expected_l = [
         {
             "program": "aidf2json",
-            "_meta": {
-                "type": "headers",
-            }
+            "_type": "headers",
         },
         {
             "call": "EA4HFF",
-            "_meta": {
-                "type": "qso",
-            }
+            "_type": "qso",
         },
         {
             "call": "EA4AW",
-            "_meta": {
-                "type": "qso",
-            }
+            "_type": "qso",
         },
         {
             "call": "EC5A",
-            "_meta": {
-                "type": "qso",
-                "errors": [
-                    {
-                        "msg": "Truncated Record",
-                        "part": ""
-                    }
-                ]
-            }
-        }
+            "_type": "qso",
+            "_errors": [
+                {
+                    "msg": "Truncated Record",
+                    "part": "",
+                }
+            ],
+        },
     ]
 
     assert res_l == expected_l

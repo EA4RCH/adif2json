@@ -6,6 +6,8 @@ import logging
 from typing import Iterable, Optional, Dict, List
 from dataclasses import dataclass, asdict
 
+_RESERVED_META_KEYS = {"_type", "_types", "_errors"}
+
 
 def to_json_lines(
     adif: Iterable[str], meta: Optional[Dict[str, str]] = None
@@ -17,12 +19,29 @@ def to_json_lines(
     def _to_jsonline(d: Dict[str, str]) -> str:
         return f"{json.dumps(d)}\n"
 
-    def _meta_addition(d: Dict) -> Dict:
-        if meta:
-            out = {**d}
-            for k, v in meta.items():
-                out["_meta"][k] = v
-        return d
+    def _flatten_meta(meta_dict: Dict[str, str]) -> Dict[str, str]:
+        flattened: Dict[str, str] = {}
+        for key, value in meta_dict.items():
+            if not isinstance(key, str):
+                raise ValueError(f"Invalid meta key {key!r}: keys must be strings")
+            if key.startswith("_"):
+                raise ValueError(
+                    f"Invalid meta key '{key}': keys cannot start with '_'"
+                )
+            flat_key = f"_{key}"
+            if flat_key in _RESERVED_META_KEYS:
+                raise ValueError(
+                    f"Invalid meta key '{key}': '{flat_key}' is reserved"
+                )
+            flattened[flat_key] = value
+        return flattened
+
+    flat_meta = _flatten_meta(meta) if meta else {}
+
+    def _add_meta(d: Dict[str, str]) -> Dict[str, str]:
+        if not flat_meta:
+            return d
+        return {**d, **flat_meta}
 
     if adif == "":
         logging.warning("Empty ADIF")
@@ -31,9 +50,9 @@ def to_json_lines(
     dicts = to_dict(adif)
     logging.info("Converted to dicts")
     logging.info("Converting to JSON lines")
-    if meta:
+    if flat_meta:
         logging.info("Adding meta")
-        dicts = map(_meta_addition, dicts)
+        dicts = map(_add_meta, dicts)
     yield from map(_to_jsonline, dicts)
 
 
@@ -150,14 +169,12 @@ def _to_dict(record: Record) -> Dict:
     helper function to convert a record to a dictionary, it's a
     way faster than using asdict from dataclasses
     """
-    meta = {
-        "type": record.type,
-    }
+    out = {**record.fields, "_type": record.type}
     if record.types:
-        meta["types"] = record.types
+        out["_types"] = record.types
     if record.errors:
-        meta["errors"] = record.errors
-    return {**record.fields, "_meta": meta}
+        out["_errors"] = record.errors
+    return out
 
 
 def to_dict(adif: Iterable[str]) -> Iterable[Dict]:

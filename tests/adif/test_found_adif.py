@@ -52,9 +52,7 @@ def test_good_1():
         "APP_DXLOG_MULT2": "",
         "APP_DXLOG_MULT3": "",
         "APP_DXLOG_STN": "R",
-        "_meta": {
-            "type": "qso",
-        }
+        "_type": "qso",
     }
 
     assert res == expected

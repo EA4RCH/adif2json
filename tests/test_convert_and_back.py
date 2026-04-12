@@ -1,3 +1,5 @@
+import json
+
 from adif2json.adif import to_json_lines
 from adif2json.json import from_json_lines, to_adif
 
@@ -19,33 +21,69 @@ def test_empty():
 
 def test_simple_qso():
     adif = ["<call:6>EA4HFF<EOR>"]
-    js = "".join(to_json_lines(adif))
-    print(js)
-    res = to_adif(js).strip()
-    print(res)
+    json_lines = list(to_json_lines(adif))
+    flat = json.loads(json_lines[0])
+
+    assert flat == {
+        "call": "EA4HFF",
+        "_type": "qso",
+    }
+
+    res = to_adif("".join(json_lines)).strip()
 
     assert res == adif[0]
 
 
 def test_simple_qso_with_header():
     adif = ["<myheader:1>1<EOH><call:6>EA4HFF<EOR>"]
-    json_lines = "".join(to_json_lines(adif))
-    print(json_lines)
-    res = from_json_lines(json_lines).strip()
+    json_lines = list(to_json_lines(adif))
+    header = json.loads(json_lines[0])
+    qso = json.loads(json_lines[1])
+
+    assert header == {
+        "myheader": "1",
+        "_type": "headers",
+    }
+    assert qso == {
+        "call": "EA4HFF",
+        "_type": "qso",
+    }
+
+    res = from_json_lines("".join(json_lines)).strip()
 
     assert res == adif[0]
 
 
 def test_multiple_header():
     adif = ["<myheader:1>1<myheader2:2>12<EOH><call:6>EA4HFF<EOR>"]
-    res = from_json_lines("".join(to_json_lines(adif))).strip()
+    json_lines = list(to_json_lines(adif))
+    header = json.loads(json_lines[0])
+
+    assert header == {
+        "myheader": "1",
+        "myheader2": "12",
+        "_type": "headers",
+    }
+
+    res = from_json_lines("".join(json_lines)).strip()
 
     assert res == adif[0]
 
 
 def test_multiple_qso():
     adif = ["<call:6>EA4HFF<EOR><call:5>EA4AW<EOR>"]
-    res = from_json_lines("".join(to_json_lines(adif))).strip()
+    json_lines = list(to_json_lines(adif))
+
+    assert json.loads(json_lines[0]) == {
+        "call": "EA4HFF",
+        "_type": "qso",
+    }
+    assert json.loads(json_lines[1]) == {
+        "call": "EA4AW",
+        "_type": "qso",
+    }
+
+    res = from_json_lines("".join(json_lines)).strip()
 
     assert res == adif[0]
 
@@ -66,10 +104,23 @@ def test_multiple_qso_with_multiple_header_and_types():
         "<call:6:S>EA4HFF<EOR><call:5>EA4AW<EOR>",
     ]
     json_res = list(to_json_lines(adif))
+    header = json.loads(json_res[0])
+    qso = json.loads(json_res[1])
     res = from_json_lines("".join(json_res)).strip()
 
-    print(json_res)
-    print("====================")
-    print(res)
-
+    assert header == {
+        "myheader": "1",
+        "myheader2": "12",
+        "_type": "headers",
+        "_types": {
+            "myheader": "N",
+        },
+    }
+    assert qso == {
+        "call": "EA4HFF",
+        "_type": "qso",
+        "_types": {
+            "call": "S",
+        },
+    }
     assert _string_similar(res, "".join(adif))

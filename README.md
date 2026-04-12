@@ -93,7 +93,22 @@ Nota: Asegúrate de tener los permisos adecuados para leer el archivo de entrada
 
 En el caso de que sea necesario puedes agregar los metadatos que quieras a las filas del fichero de salida. Para esto solo necesitas poner un fichero con el mismo nombre que el fichero de entrada, pero con la extensión .meta.
 
-Estos metadatos se pueden utilizar para agregar información y usarla en otros programas, como en la carga para un diploma o similar. El fichero meta es un fichero JSON, y su contenido será agregado a todos los qsos que se generen en el campo `_meta`.
+Estos metadatos se pueden utilizar para agregar información y usarla en otros programas, como en la carga para un diploma o similar. El fichero meta es un fichero JSON, y su contenido sera agregado a todos los registros como claves planas prefijadas por `_`.
+
+### Formato JSON de salida (plano)
+
+El conversor genera salida en formato JSON Lines (una linea JSON por registro). El JSON es plano y contiene algunos campos reservados:
+
+- `_type`: tipo de registro (`headers` o `qso`)
+- `_types`: (opcional) tipos ADIF por campo
+- `_errors`: (opcional) lista de errores de parseo
+
+Si existe un fichero `.meta` (JSON) junto al ADIF de entrada, sus claves se agregan a cada registro como claves planas prefijadas por `_`. Por ejemplo, una clave `source` en el `.meta` se convertira en `_source` en cada linea JSON.
+
+Restricciones del `.meta`:
+
+- Las claves no pueden empezar por `_`.
+- No se permiten claves que colisionen con campos reservados al prefijar (por ejemplo `type`, `types` o `errors`).
 
 # Objetivos del proyecto adif2json
 

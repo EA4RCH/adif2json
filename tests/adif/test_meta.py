@@ -1,4 +1,7 @@
 import json
+
+import pytest
+
 import adif2json.adif as ad
 
 
@@ -15,9 +18,7 @@ def test_empty_meta():
 
     expected = {
         "call": "EA4HFF",
-        "_meta": {
-            "type": "qso"
-        }
+        "_type": "qso",
     }
 
     assert l == expected
@@ -40,13 +41,29 @@ def test_simple_meta():
 
     expected = {
         "call": "EA4HFF",
-        "_meta": {
-            "type": "qso",
-            "source": "activation",
-            "activator": "EA4HFF",
-            "dme": "28079",
-            "vertice": "VGM-001",
-        }
+        "_type": "qso",
+        "_source": "activation",
+        "_activator": "EA4HFF",
+        "_dme": "28079",
+        "_vertice": "VGM-001",
     }
 
     assert l == expected
+
+
+@pytest.mark.parametrize(
+    "meta",
+    [
+        {"_source": "activation"},
+        {"type": "hunter"},
+        {"types": {"call": "N"}},
+        {"errors": []},
+    ],
+)
+def test_invalid_meta_conflicts(meta):
+    imp = [
+        "<call:6>EA4HFF<EOR>",
+    ]
+
+    with pytest.raises(ValueError):
+        list(ad.to_json_lines(imp, meta))
